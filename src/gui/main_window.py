@@ -6,26 +6,24 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QLineEdit,
-    QComboBox,
-    QFrame,
+    QMainWindow,
     QMessageBox,
-    QFileDialog,
     QProgressBar,
+    QPushButton,
     QTextEdit,
-    QSplitter,
-    QGroupBox,
-    QGridLayout,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src import __version__
-from src.config import Config
 from src.leitor import LeitorPlanilhas
 
 
@@ -270,7 +268,7 @@ class MainWindow(QMainWindow):
             self,
             f"Selecionar Planilha {origem}",
             "",
-            "Planilhas Excel (*.xlsx *.xls);;Todos os Arquivos (*.*)"
+            "Planilhas Excel (*.xlsx *.xls);;Arquivos Excel (*.xlsx);;Arquivos Excel Antigos (*.xls);;Todos os Arquivos (*.*)"
         )
 
         if not caminho:
@@ -294,7 +292,7 @@ class MainWindow(QMainWindow):
                     self.combo_a.setCurrentIndex(0)
                     leitor.selecionar_aba(leitor.abas[0])
 
-                self.atualizar_status(f"✅ Planilha A carregada: {Path(caminho).name}")
+                self.atualizar_status(f"✅ Planilha A carregada: {Path(caminho).name} (Abas: {len(leitor.abas)})")
 
             else:
                 self.campo_b.setText(caminho)
@@ -306,13 +304,21 @@ class MainWindow(QMainWindow):
                     self.combo_b.setCurrentIndex(0)
                     leitor.selecionar_aba(leitor.abas[0])
 
-                self.atualizar_status(f"✅ Planilha B carregada: {Path(caminho).name}")
+                self.atualizar_status(f"✅ Planilha B carregada: {Path(caminho).name} (Abas: {len(leitor.abas)})")
 
             # Verifica se pode habilitar o botão Comparar
             self.verificar_pronto_para_comparar()
 
-        except Exception as e:
-            QMessageBox.critical(self, "Erro", f"Erro ao carregar planilha:\n{str(e)}")
+        except ImportError as e:
+            QMessageBox.critical(
+                self,
+                "Erro de Dependência",
+                f"Biblioteca necessária não encontrada:\n\n{e!s}\n\n"
+                "Execute no terminal:\n"
+                "pip install xlrd openpyxl"
+            )
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.critical(self, "Erro", f"Erro ao carregar planilha:\n\n{e!s}")
 
     def verificar_pronto_para_comparar(self):
         """Verifica se ambas as planilhas estão prontas para comparação."""

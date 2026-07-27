@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
 import pandas as pd
 
@@ -14,9 +14,9 @@ class LeitorPlanilhas:
     """Classe para leitura e validação de planilhas Excel."""
 
     # Palavras-chave para identificar cabeçalhos
-    KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]
-    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "id", "código", "codigo", "número", "numero"]
-    KEYWORDS_DATA = [
+    KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]  # noqa: RUF012
+    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "id", "código", "codigo", "número", "numero"]  # noqa: RUF012
+    KEYWORDS_DATA = [  # noqa: RUF012
         "data de admissão",
         "data admissão",
         "data adm",
@@ -27,16 +27,16 @@ class LeitorPlanilhas:
     ]
 
     def __init__(self):
-        self.arquivo: Optional[Path] = None
-        self.abas: List[str] = []
-        self.aba_selecionada: Optional[str] = None
-        self.cabecalhos: Dict[str, Any] = {}
-        self.dados: List[Dict] = []
-        self.erros: List[Dict] = []
-        self.linha_cabecalho: Optional[int] = None
+        self.arquivo: Path | None = None
+        self.abas: list[str] = []
+        self.aba_selecionada: str | None = None
+        self.cabecalhos: dict[str, Any] = {}
+        self.dados: list[dict] = []
+        self.erros: list[dict] = []
+        self.linha_cabecalho: int | None = None
         self.df_raw = None
 
-    def carregar_arquivo(self, caminho: str, aba: Optional[str] = None) -> bool:
+    def carregar_arquivo(self, caminho: str, aba: str | None = None) -> bool:
         """
         Carrega um arquivo Excel.
 
@@ -52,8 +52,30 @@ class LeitorPlanilhas:
             if not self.arquivo.exists():
                 raise FileNotFoundError(f"Arquivo não encontrado: {caminho}")
 
+            # Verifica extensão para usar o engine correto
+            extensao = self.arquivo.suffix.lower()
+            
             # Lista todas as abas
-            xls = pd.ExcelFile(self.arquivo)
+            try:
+                if extensao in ['.xlsx', '.xlsm']:
+                    xls = pd.ExcelFile(self.arquivo, engine='openpyxl')
+                elif extensao == '.xls':
+                    try:
+                        xls = pd.ExcelFile(self.arquivo, engine='xlrd')
+                    except ImportError:
+                        # Fallback para openpyxl se xlrd não estiver disponível
+                        xls = pd.ExcelFile(self.arquivo, engine='openpyxl')
+                else:
+                    # Tenta com openpyxl por padrão
+                    xls = pd.ExcelFile(self.arquivo, engine='openpyxl')
+                    
+            except Exception:  # noqa: BLE001
+                # Tenta com outro engine
+                try:
+                    xls = pd.ExcelFile(self.arquivo)
+                except Exception as e2:  # noqa: BLE001
+                    raise ValueError(f"Erro ao ler arquivo: {e2!s}")
+                
             self.abas = xls.sheet_names
 
             if not self.abas:
@@ -73,10 +95,10 @@ class LeitorPlanilhas:
 
             return True
 
-        except Exception as e:
-            raise ValueError(f"Erro ao carregar arquivo: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            raise ValueError(f"Erro ao carregar arquivo: {e!s}")
 
-    def listar_abas(self) -> List[str]:
+    def listar_abas(self) -> list[str]:
         """Retorna a lista de abas disponíveis."""
         return self.abas
 
@@ -95,7 +117,7 @@ class LeitorPlanilhas:
         self.aba_selecionada = nome_aba
         return True
 
-    def identificar_cabecalhos(self) -> Tuple[bool, Dict[str, Any]]:
+    def identificar_cabecalhos(self) -> tuple[bool, dict[str, Any]]:
         """
         Identifica a linha de cabeçalho e mapeia as colunas.
 
@@ -160,7 +182,7 @@ class LeitorPlanilhas:
 
         return True, self.cabecalhos
 
-    def processar_dados(self, origem: str = "A") -> Tuple[List[Dict], List[Dict]]:
+    def processar_dados(self, origem: str = "A") -> tuple[list[dict], list[dict]]:
         """
         Processa os dados da planilha, criando registros válidos.
 
@@ -234,7 +256,7 @@ class LeitorPlanilhas:
 
                 self.dados.append(registro)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Registra o erro mas continua
                 cpf_val = str(row.iloc[self.cabecalhos["cpf"]]) if self.cabecalhos["cpf"] < len(row) else ""
                 mat_val = str(row.iloc[self.cabecalhos["matricula"]]) if self.cabecalhos["matricula"] < len(row) else ""
@@ -250,7 +272,7 @@ class LeitorPlanilhas:
 
         return self.dados, self.erros
 
-    def obter_estatisticas(self) -> Dict:
+    def obter_estatisticas(self) -> dict:
         """Retorna estatísticas do processamento."""
         return {
             "total_registros": len(self.dados),

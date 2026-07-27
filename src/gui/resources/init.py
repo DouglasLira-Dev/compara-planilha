@@ -1,0 +1,1 @@
+"""Recursos da interface gráfica (ícones, estilos)."""

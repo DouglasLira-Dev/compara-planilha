@@ -1,0 +1,1 @@
+"""Ícones da interface gráfica."""

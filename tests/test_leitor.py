@@ -108,4 +108,5 @@ class TestLeitorPlanilhas:
         dados, erros = leitor.processar_dados("A")
         # Linha em branco deve ser ignorada
         assert len(dados) == 2
+        # A linha em branco não deve gerar erro
         assert len(erros) == 0

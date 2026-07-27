@@ -181,7 +181,7 @@ class TestComparadorPlanilhas:
                 "linha": 2,
                 "cpf": "12345678900",
                 "matricula": "001234",
-                "data": "15/08/2023",
+                "data": "15/08/2023",  # Mantém string, será tratado pelo modelo
                 "erro": "CPF inválido",
             }
         ]

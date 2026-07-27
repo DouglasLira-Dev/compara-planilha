@@ -3,13 +3,15 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.normalizers import NormalizadorDados
 
 
 class RegistroPlanilha(BaseModel):
     """Modelo de um registro da planilha com normalização automática."""
+
+    model_config = ConfigDict(extra="forbid")
 
     cpf: str = Field(..., description="CPF com 11 dígitos")
     matricula: str = Field(..., description="Matrícula normalizada")
@@ -63,13 +65,11 @@ class RegistroPlanilha(BaseModel):
             dados.update(self.dados_extras)
         return dados
 
-    class Config:
-        """Configuração do modelo."""
-        extra = "forbid"
-
 
 class RegistroDivergente(BaseModel):
     """Modelo para registro com divergência de data."""
+
+    model_config = ConfigDict(extra="forbid")
 
     cpf: str
     matricula: str
@@ -109,13 +109,30 @@ class RegistroDivergente(BaseModel):
 class RegistroErro(BaseModel):
     """Modelo para registro com erro."""
 
+    model_config = ConfigDict(extra="forbid")
+
     linha: int
     planilha: str
     cpf: str | None = None
     matricula: str | None = None
-    data: datetime | None = None
+    data: str | datetime | None = None
     erro: str
     dados_extras: dict[str, Any] | None = None
+
+    @field_validator("data", mode="before")
+    @classmethod
+    def normalizar_data_erro(cls, v):
+        """Normaliza data do erro se for string."""
+        if v is None or v == "":
+            return None
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return NormalizadorDados.normalizar_data_admissao(v)
+            except:  # noqa: E722
+                return None
+        return None
 
     def data_brasil(self) -> str | None:
         if self.data:
@@ -144,6 +161,8 @@ class RegistroErro(BaseModel):
 
 class ResultadoComparacao(BaseModel):
     """Modelo com todos os resultados da comparação."""
+
+    model_config = ConfigDict(extra="forbid")
 
     apenas_a: list[RegistroPlanilha] = Field(
         default_factory=list,

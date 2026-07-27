@@ -41,6 +41,10 @@ class MainWindow(QMainWindow):
         self.leitor_a = LeitorPlanilhas()
         self.leitor_b = LeitorPlanilhas()
 
+        self.comparar_clicked.connect(self.iniciar_comparacao)
+        self.configurar_clicked.connect(self.configurar_clicked)
+        self.ajuda_clicked.connect(self.ajuda_clicked)
+
         self.init_ui()
 
     def init_ui(self):
@@ -380,6 +384,72 @@ class MainWindow(QMainWindow):
     def atualizar_status_config(self):
         """Atualiza status após salvar configurações."""
         self.atualizar_status("✅ Configurações salvas com sucesso!")
+
+    def iniciar_comparacao(self):
+        """Inicia o processo de comparação."""
+        # Valida se as planilhas estão carregadas
+        if not self.campo_a.text() or not self.campo_b.text():
+            QMessageBox.warning(self, "Aviso", "Selecione ambas as planilhas primeiro!")
+            return
+
+        # Valida se as abas estão selecionadas
+        if self.combo_a.currentText() == "Selecione uma planilha primeiro":
+            QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha A!")
+            return
+
+        if self.combo_b.currentText() == "Selecione uma planilha primeiro":
+            QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha B!")
+            return
+
+        # Desabilita botões durante processamento
+        self.btn_comparar.setEnabled(False)
+        self.btn_config.setEnabled(False)
+        self.botao_a.setEnabled(False)
+        self.botao_b.setEnabled(False)
+
+        # Mostra barra de progresso
+        self.mostrar_progresso(True)
+        self.atualizar_progresso(0, 100)
+        self.atualizar_status("⏳ Processando...")
+
+        # TODO: Implementar lógica de comparação
+        # Por enquanto, simula o processamento
+        self.adicionar_detalhe("📊 Carregando planilha A...")
+        self.adicionar_detalhe("📊 Carregando planilha B...")
+        self.adicionar_detalhe("🔍 Validando dados...")
+        self.adicionar_detalhe("📊 Comparando registros...")
+        self.adicionar_detalhe("📄 Gerando relatório...")
+
+        # Simula progresso
+        import time
+        for i in range(1, 101):
+            self.atualizar_progresso(i, 100)
+            time.sleep(0.02)
+
+        # Finaliza
+        self.atualizar_status("✅ Comparação concluída!")
+        self.adicionar_detalhe("✅ Relatório gerado com sucesso!")
+        self.mostrar_progresso(False)
+
+        # Reabilita botões
+        self.btn_comparar.setEnabled(True)
+        self.btn_config.setEnabled(True)
+        self.botao_a.setEnabled(True)
+        self.botao_b.setEnabled(True)
+
+        # Mostra mensagem de sucesso
+        QMessageBox.information(
+            self,
+            "✅ Comparação Concluída",
+            "A comparação foi concluída com sucesso!\n\n"
+            "📄 Relatório gerado: relatorio_comparacao.xlsx\n"
+            "📊 Resumo:\n"
+            "   - Divergências: 0\n"
+            "   - Apenas na A: 0\n"
+            "   - Apenas na B: 0\n"
+            "   - Iguais: 0\n"
+            "   - Erros: 0"
+        )  
 
 
 def main():

@@ -3,11 +3,13 @@
 import sys
 from pathlib import Path
 
-# Adiciona o diretório raiz ao path para importações
+# Adiciona o diretório pai ao path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src import __version__
 from src.config import Config
+from src.gui.main_window import MainWindow
+from PyQt6.QtWidgets import QApplication
 
 
 def main() -> None:
@@ -15,9 +17,15 @@ def main() -> None:
     print(f"🛡️ Comparador de Planilhas v{__version__}")
     print(f"📁 Diretório de logs: {Config.LOGS_DIR}")
     print(f"📁 Diretório de relatórios: {Config.REPORTS_DIR}")
-    print("\n📋 Versão GUI em desenvolvimento...")
-    print("💡 Em breve: Interface gráfica com PyQt6")
-    print("\n✅ Configurações carregadas com sucesso!")
+    print("\n🚀 Iniciando interface gráfica...")
+
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
 
 
 def cli_main() -> None:

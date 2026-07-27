@@ -364,6 +364,12 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
+    def ajuda_clicked(self):  # noqa: F811
+        """Abre a janela de ajuda."""
+        from src.gui.help_window import HelpWindow
+        help_window = HelpWindow(self)
+        help_window.exec()
+
 
 def main():
     """Função principal para teste da GUI."""

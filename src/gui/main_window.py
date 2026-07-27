@@ -375,8 +375,10 @@ class MainWindow(PyQt6.QtWidgets.QMainWindow):
 
     def iniciar_comparacao(self):
         """Inicia o processo de comparação com dados reais."""
-        from src.comparador import ComparadorPlanilhas
+
         from src.relatorio import GeradorRelatorio
+
+        from ..comparador import ComparadorPlanilhas
 
         # Valida se as planilhas estão carregadas
         if not self.campo_a.text() or not self.campo_b.text():
@@ -471,28 +473,15 @@ class MainWindow(PyQt6.QtWidgets.QMainWindow):
             self.botao_a.setEnabled(True)
             self.botao_b.setEnabled(True)
 
-            # Mostra resumo
-            resumo = comparador.obter_resumo()
+            # ===== MOSTRA JANELA DE RESULTADOS =====
+            from src.gui.results_window import ResultsWindow
             
-            PyQt6.QtWidgets.QMessageBox.information(
-                self,
-                "✅ Comparação Concluída",
-                f"A comparação foi concluída com sucesso!\n\n"
-                f"📄 Relatório: {caminho_relatorio.name}\n"
-                f"📁 Pasta: {caminho_relatorio.parent}\n\n"
-                f"📊 Resumo:\n"
-                f"   - Total registros A: {resumo['total_registros_a']}\n"
-                f"   - Total registros B: {resumo['total_registros_b']}\n"
-                f"   - Divergências: {resumo['total_divergencias']}\n"
-                f"   - Apenas na A: {resumo['total_apenas_a']}\n"
-                f"   - Apenas na B: {resumo['total_apenas_b']}\n"
-                f"   - Iguais: {resumo['total_iguais']}\n"
-                f"   - Erros: {resumo['total_erros']}\n"
-                f"   - Taxa divergência: {resumo['taxa_divergencia']:.2f}%"
-            )
+            results_window = ResultsWindow(resultado, caminho_relatorio, self)
+            results_window.exec()
 
         except Exception as e:  # noqa: BLE001
             # Em caso de erro
+            import traceback
             self.mostrar_progresso(False)
             self.btn_comparar.setEnabled(True)
             self.btn_config.setEnabled(True)
@@ -501,11 +490,13 @@ class MainWindow(PyQt6.QtWidgets.QMainWindow):
             
             self.atualizar_status("❌ Erro durante a comparação!")
             self.adicionar_detalhe(f"❌ ERRO: {e!s}")
+            self.adicionar_detalhe(traceback.format_exc())
             
             PyQt6.QtWidgets.QMessageBox.critical(
                 self,
                 "❌ Erro",
-                f"Ocorreu um erro durante a comparação:\n\n{e!s}"
+                f"Ocorreu um erro durante a comparação:\n\n{e!s}\n\n"
+                f"Detalhes adicionais no status."
             )
 
 

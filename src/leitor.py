@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
@@ -215,13 +215,36 @@ class LeitorPlanilhas:
         for idx, row in df.iterrows():
             try:
                 # Extrai os dados
-                cpf = str(row.iloc[self.cabecalhos["cpf"]]) if self.cabecalhos["cpf"] < len(row) else ""
-                matricula = str(row.iloc[self.cabecalhos["matricula"]]) if self.cabecalhos["matricula"] < len(row) else ""
-                data = str(row.iloc[self.cabecalhos["data_admissao"]]) if self.cabecalhos["data_admissao"] < len(row) else ""
+                cpf = row.iloc[self.cabecalhos["cpf"]] if self.cabecalhos["cpf"] < len(row) else ""
+                matricula = row.iloc[self.cabecalhos["matricula"]] if self.cabecalhos["matricula"] < len(row) else ""
+                data = row.iloc[self.cabecalhos["data_admissao"]] if self.cabecalhos["data_admissao"] < len(row) else ""
 
-                # Verifica se a linha está em branco
-                if pd.isna(cpf) and pd.isna(matricula) and pd.isna(data):
+                # Converte para string e trata NaN
+                cpf_str = str(cpf) if not pd.isna(cpf) else ""
+                matricula_str = str(matricula) if not pd.isna(matricula) else ""
+                data_str = str(data) if not pd.isna(data) else ""
+
+                # Remove espaços
+                cpf_limpo = cpf_str.strip()
+                matricula_limpa = matricula_str.strip()
+                data_limpa = data_str.strip()
+
+                # VERIFICAÇÃO CRÍTICA: Se todos os campos obrigatórios estiverem vazios ou forem "nan", pula a linha
+                if (not cpf_limpo or cpf_limpo.lower() == "nan") and \
+                (not matricula_limpa or matricula_limpa.lower() == "nan") and \
+                (not data_limpa or data_limpa.lower() == "nan"):
                     continue  # Pula linhas em branco
+
+                # Se CPF está vazio ou é "nan"
+                if not cpf_limpo or cpf_limpo.lower() == "nan":
+                    self.erros.append({
+                        "linha": idx + 2,
+                        "cpf": None,
+                        "matricula": matricula_limpa if matricula_limpa.lower() != "nan" else "",
+                        "data": data_limpa if data_limpa.lower() != "nan" else "",
+                        "erro": "CPF vazio",
+                    })
+                    continue
 
                 # Coleta dados extras
                 dados_extras = {}
@@ -231,24 +254,25 @@ class LeitorPlanilhas:
                             col_name = df.columns[col_idx] if col_idx < len(df.columns) else f"col_{col_idx}"
                             valor = row.iloc[col_idx]
                             if not pd.isna(valor):
-                                dados_extras[str(col_name)] = str(valor)
+                                valor_str = str(valor).strip()
+                                if valor_str and valor_str.lower() != "nan":
+                                    dados_extras[str(col_name)] = valor_str
 
                 # Valida CPF
-                cpf_limpo = re.sub(r"[^0-9]", "", str(cpf))
-                cpf_valido = ValidadorCPF.validar(cpf_limpo) if cpf_limpo else False
+                cpf_limpo_num = re.sub(r"[^0-9]", "", cpf_limpo)
+                cpf_valido = ValidadorCPF.validar(cpf_limpo_num) if cpf_limpo_num else False
 
-                if not cpf_limpo:
+                if not cpf_limpo_num:
                     raise ValueError("CPF vazio")
-
-                if not cpf_valido:
+                elif not cpf_valido:
                     raise ValueError("CPF inválido (dígitos verificadores não conferem)")
 
                 # Registro válido
                 registro = {
-                    "cpf": cpf_limpo,
-                    "matricula": str(matricula).strip() if not pd.isna(matricula) else "",
-                    "data_admissao": str(data) if not pd.isna(data) else "",
-                    "linha_original": idx + 2,  # +2 por causa do cabeçalho e índice 0
+                    "cpf": cpf_limpo_num,
+                    "matricula": matricula_limpa if matricula_limpa.lower() != "nan" else "",
+                    "data_admissao": data_limpa if data_limpa.lower() != "nan" else "",
+                    "linha_original": idx + 2,
                     "origem": origem,
                     "dados_extras": dados_extras,
                     "valido": True,
@@ -258,15 +282,19 @@ class LeitorPlanilhas:
 
             except Exception as e:  # noqa: BLE001
                 # Registra o erro mas continua
-                cpf_val = str(row.iloc[self.cabecalhos["cpf"]]) if self.cabecalhos["cpf"] < len(row) else ""
-                mat_val = str(row.iloc[self.cabecalhos["matricula"]]) if self.cabecalhos["matricula"] < len(row) else ""
-                data_val = str(row.iloc[self.cabecalhos["data_admissao"]]) if self.cabecalhos["data_admissao"] < len(row) else ""
+                cpf_val = row.iloc[self.cabecalhos["cpf"]] if self.cabecalhos["cpf"] < len(row) else ""
+                mat_val = row.iloc[self.cabecalhos["matricula"]] if self.cabecalhos["matricula"] < len(row) else ""
+                data_val = row.iloc[self.cabecalhos["data_admissao"]] if self.cabecalhos["data_admissao"] < len(row) else ""
+
+                cpf_str = str(cpf_val) if not pd.isna(cpf_val) else ""
+                mat_str = str(mat_val) if not pd.isna(mat_val) else ""
+                data_str = str(data_val) if not pd.isna(data_val) else ""
 
                 self.erros.append({
                     "linha": idx + 2,
-                    "cpf": cpf_val if not pd.isna(cpf_val) else None,
-                    "matricula": mat_val if not pd.isna(mat_val) else None,
-                    "data": data_val if not pd.isna(data_val) else None,
+                    "cpf": cpf_str.strip() if cpf_str.strip() and cpf_str.strip().lower() != "nan" else None,
+                    "matricula": mat_str.strip() if mat_str.strip() and mat_str.strip().lower() != "nan" else None,
+                    "data": data_str.strip() if data_str.strip() and data_str.strip().lower() != "nan" else None,
                     "erro": str(e),
                 })
 

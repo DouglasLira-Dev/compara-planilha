@@ -6,10 +6,12 @@ from pathlib import Path
 # Adiciona o diretório pai ao path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Importa a GUI
+from PyQt6.QtWidgets import QApplication
+
 from src import __version__
 from src.config import Config
 from src.gui.main_window import MainWindow
-from PyQt6.QtWidgets import QApplication
 
 
 def main() -> None:
@@ -44,11 +46,9 @@ def cli_main() -> None:
     print(f"📊 Planilha A: {sys.argv[1]}")
     print(f"📊 Planilha B: {sys.argv[2]}")
     print("⏳ Comparação em desenvolvimento...")
-    print("📄 Relatório será gerado em breve...")
 
 
 if __name__ == "__main__":
-    # Se houver argumentos, executa CLI
     if len(sys.argv) > 1:
         cli_main()
     else:

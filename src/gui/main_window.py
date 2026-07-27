@@ -1,5 +1,6 @@
 """Janela principal do Comparador de Planilhas."""
 
+import datetime
 import sys
 import time
 from pathlib import Path
@@ -391,7 +392,10 @@ class MainWindow(QMainWindow):
         self.atualizar_status("✅ Configurações salvas com sucesso!")
 
     def iniciar_comparacao(self):
-        """Inicia o processo de comparação."""
+        """Inicia o processo de comparação com dados reais."""
+        from src.comparador import ComparadorPlanilhas
+        from src.relatorio import GeradorRelatorio
+
         # Valida se as planilhas estão carregadas
         if not self.campo_a.text() or not self.campo_b.text():
             QMessageBox.warning(self, "Aviso", "Selecione ambas as planilhas primeiro!")
@@ -406,76 +410,121 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha B!")
             return
 
-        # Desabilita botões durante processamento
-        self.btn_comparar.setEnabled(False)
-        self.btn_config.setEnabled(False)
-        self.botao_a.setEnabled(False)
-        self.botao_b.setEnabled(False)
+        try:
+            # Desabilita botões durante processamento
+            self.btn_comparar.setEnabled(False)
+            self.btn_config.setEnabled(False)
+            self.botao_a.setEnabled(False)
+            self.botao_b.setEnabled(False)
 
-        # Mostra barra de progresso
-        self.mostrar_progresso(True)
-        self.atualizar_progresso(0, 100)
-        self.atualizar_status("⏳ Processando...")
+            # Mostra barra de progresso
+            self.mostrar_progresso(True)
+            self.atualizar_progresso(0, 100)
+            self.detalhes_status.clear()
+            self.atualizar_status("⏳ Processando...")
 
-        # TODO: Implementar lógica de comparação real
-        # Por enquanto, simula o processamento
-        self.adicionar_detalhe("📊 Carregando planilha A...")
-        self.atualizar_progresso(20, 100)
-        time.sleep(0.3)
+            # ===== ETAPA 1: CARREGAR PLANILHA A =====
+            self.atualizar_progresso(5, 100)
+            self.adicionar_detalhe("📊 Carregando planilha A...")
+            
+            aba_a = self.combo_a.currentText()
+            self.leitor_a.selecionar_aba(aba_a)
+            dados_a, erros_a = self.leitor_a.processar_dados("A")
+            self.adicionar_detalhe(f"   ✅ {len(dados_a)} registros válidos, {len(erros_a)} erros")
 
-        self.adicionar_detalhe("📊 Carregando planilha B...")
-        self.atualizar_progresso(40, 100)
-        time.sleep(0.3)
+            # ===== ETAPA 2: CARREGAR PLANILHA B =====
+            self.atualizar_progresso(20, 100)
+            self.adicionar_detalhe("📊 Carregando planilha B...")
+            
+            aba_b = self.combo_b.currentText()
+            self.leitor_b.selecionar_aba(aba_b)
+            dados_b, erros_b = self.leitor_b.processar_dados("B")
+            self.adicionar_detalhe(f"   ✅ {len(dados_b)} registros válidos, {len(erros_b)} erros")
 
-        self.adicionar_detalhe("🔍 Validando dados...")
-        self.atualizar_progresso(60, 100)
-        time.sleep(0.3)
+            # ===== ETAPA 3: COMPARAR =====
+            self.atualizar_progresso(40, 100)
+            self.adicionar_detalhe("🔍 Iniciando comparação...")
+            
+            comparador = ComparadorPlanilhas()
+            
+            # Define callback de progresso
+            def atualizar_progresso_callback(valor, mensagem):
+                progresso = 40 + int(valor * 0.55)  # 40% a 95%
+                self.atualizar_progresso(progresso, 100)
+                self.adicionar_detalhe(f"   {mensagem}")
+                QApplication.processEvents()  # Atualiza a interface
+            
+            comparador.definir_callback_progresso(atualizar_progresso_callback)
+            
+            # Carrega dados no comparador
+            comparador.carregar_dados(dados_a, dados_b, erros_a, erros_b)
+            
+            # Executa comparação
+            resultado = comparador.comparar()
 
-        self.adicionar_detalhe("📊 Comparando registros...")
-        self.atualizar_progresso(80, 100)
-        time.sleep(0.3)
+            # ===== ETAPA 4: GERAR RELATÓRIO =====
+            self.atualizar_progresso(95, 100)
+            self.adicionar_detalhe("📄 Gerando relatório...")
+            
+            gerador = GeradorRelatorio()
+            gerador.carregar_resultado(resultado)
+            
+            # Define nome do relatório (com timestamp)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nome_relatorio = f"relatorio_comparacao_{timestamp}.xlsx"
+            gerador.definir_nome_arquivo(nome_relatorio)
+            
+            # Gera o relatório
+            caminho_relatorio = gerador.gerar()
+            self.adicionar_detalhe(f"   ✅ Relatório gerado: {caminho_relatorio.name}")
 
-        self.adicionar_detalhe("📄 Gerando relatório...")
-        self.atualizar_progresso(100, 100)
-        time.sleep(0.3)
+            # ===== FINALIZAR =====
+            self.atualizar_progresso(100, 100)
+            self.atualizar_status("✅ Comparação concluída!")
+            self.mostrar_progresso(False)
 
-        # Finaliza
-        self.atualizar_status("✅ Comparação concluída!")
-        self.adicionar_detalhe("✅ Relatório gerado com sucesso!")
-        self.mostrar_progresso(False)
+            # Reabilita botões
+            self.btn_comparar.setEnabled(True)
+            self.btn_config.setEnabled(True)
+            self.botao_a.setEnabled(True)
+            self.botao_b.setEnabled(True)
 
-        # Reabilita botões
-        self.btn_comparar.setEnabled(True)
-        self.btn_config.setEnabled(True)
-        self.botao_a.setEnabled(True)
-        self.botao_b.setEnabled(True)
+            # Mostra resumo
+            resumo = comparador.obter_resumo()
+            
+            QMessageBox.information(
+                self,
+                "✅ Comparação Concluída",
+                f"A comparação foi concluída com sucesso!\n\n"
+                f"📄 Relatório: {caminho_relatorio.name}\n"
+                f"📁 Pasta: {caminho_relatorio.parent}\n\n"
+                f"📊 Resumo:\n"
+                f"   - Total registros A: {resumo['total_registros_a']}\n"
+                f"   - Total registros B: {resumo['total_registros_b']}\n"
+                f"   - Divergências: {resumo['total_divergencias']}\n"
+                f"   - Apenas na A: {resumo['total_apenas_a']}\n"
+                f"   - Apenas na B: {resumo['total_apenas_b']}\n"
+                f"   - Iguais: {resumo['total_iguais']}\n"
+                f"   - Erros: {resumo['total_erros']}\n"
+                f"   - Taxa divergência: {resumo['taxa_divergencia']:.2f}%"
+            )
 
-        # Mostra mensagem de sucesso
-        QMessageBox.information(
-            self,
-            "✅ Comparação Concluída",
-            "A comparação foi concluída com sucesso!\n\n"
-            "📄 Relatório gerado: relatorio_comparacao.xlsx\n"
-            "📊 Resumo:\n"
-            "   - Divergências: 0\n"
-            "   - Apenas na A: 0\n"
-            "   - Apenas na B: 0\n"
-            "   - Iguais: 0\n"
-            "   - Erros: 0"
-        )
-
-    def closeEvent(self, event):
-        """Evento ao fechar a janela."""
-        reply = QMessageBox.question(
-            self,
-            "Sair",
-            "Deseja realmente sair?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            event.accept()
-        else:
-            event.ignore()
+        except Exception as e:  # noqa: BLE001
+            # Em caso de erro
+            self.mostrar_progresso(False)
+            self.btn_comparar.setEnabled(True)
+            self.btn_config.setEnabled(True)
+            self.botao_a.setEnabled(True)
+            self.botao_b.setEnabled(True)
+            
+            self.atualizar_status("❌ Erro durante a comparação!")
+            self.adicionar_detalhe(f"❌ ERRO: {e!s}")
+            
+            QMessageBox.critical(
+                self,
+                "❌ Erro",
+                f"Ocorreu um erro durante a comparação:\n\n{e!s}"
+            )
 
 
 def main():

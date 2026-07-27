@@ -370,6 +370,17 @@ class MainWindow(QMainWindow):
         help_window = HelpWindow(self)
         help_window.exec()
 
+    def configurar_clicked(self):  # noqa: F811
+        """Abre a janela de configurações."""
+        from src.gui.config_window import ConfigWindow
+        config_window = ConfigWindow(self)
+        config_window.config_saved.connect(self.atualizar_status_config)
+        config_window.exec()
+
+    def atualizar_status_config(self):
+        """Atualiza status após salvar configurações."""
+        self.atualizar_status("✅ Configurações salvas com sucesso!")
+
 
 def main():
     """Função principal para teste da GUI."""

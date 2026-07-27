@@ -1,35 +1,17 @@
 """Janela principal do Comparador de Planilhas."""
 
-import datetime
 import sys
-import time
+from datetime import datetime
 from pathlib import Path
 
+import PyQt6.QtWidgets
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QFileDialog,
-    QFrame,
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
 
 from src import __version__
 from src.leitor import LeitorPlanilhas
 
 
-class MainWindow(QMainWindow):
+class MainWindow(PyQt6.QtWidgets.QMainWindow):
     """Janela principal da aplicação."""
 
     # Sinais
@@ -57,15 +39,15 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(self._get_styles())
 
         # Widget central
-        central_widget = QWidget()
+        central_widget = PyQt6.QtWidgets.QWidget()
         self.setCentralWidget(central_widget)
 
         # Layout principal
-        main_layout = QVBoxLayout(central_widget)
+        main_layout = PyQt6.QtWidgets.QVBoxLayout(central_widget)
         main_layout.setSpacing(20)
 
         # ===== TÍTULO =====
-        title_label = QLabel("🛡️ COMPARADOR DE PLANILHAS")
+        title_label = PyQt6.QtWidgets.QLabel("🛡️ COMPARADOR DE PLANILHAS")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("""
             font-size: 24px;
@@ -76,38 +58,38 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(title_label)
 
         # ===== SELEÇÃO DE PLANILHAS =====
-        planilhas_group = QGroupBox("📂 Seleção de Planilhas")
-        planilhas_layout = QGridLayout()
+        planilhas_group = PyQt6.QtWidgets.QGroupBox("📂 Seleção de Planilhas")
+        planilhas_layout = PyQt6.QtWidgets.QGridLayout()
         planilhas_group.setLayout(planilhas_layout)
 
         # Planilha A
-        planilhas_layout.addWidget(QLabel("Planilha A:"), 0, 0)
-        self.campo_a = QLineEdit()
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha A:"), 0, 0)
+        self.campo_a = PyQt6.QtWidgets.QLineEdit()
         self.campo_a.setPlaceholderText("Selecione a primeira planilha...")
         planilhas_layout.addWidget(self.campo_a, 0, 1)
-        self.botao_a = QPushButton("📂 Selecionar")
+        self.botao_a = PyQt6.QtWidgets.QPushButton("📂 Selecionar")
         self.botao_a.clicked.connect(lambda: self.selecionar_planilha("A"))
         planilhas_layout.addWidget(self.botao_a, 0, 2)
 
         # Aba A
-        planilhas_layout.addWidget(QLabel("Aba A:"), 1, 0)
-        self.combo_a = QComboBox()
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Aba A:"), 1, 0)
+        self.combo_a = PyQt6.QtWidgets.QComboBox()
         self.combo_a.setEnabled(False)
         self.combo_a.addItem("Selecione uma planilha primeiro")
         planilhas_layout.addWidget(self.combo_a, 1, 1, 1, 2)
 
         # Planilha B
-        planilhas_layout.addWidget(QLabel("Planilha B:"), 2, 0)
-        self.campo_b = QLineEdit()
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha B:"), 2, 0)
+        self.campo_b = PyQt6.QtWidgets.QLineEdit()
         self.campo_b.setPlaceholderText("Selecione a segunda planilha...")
         planilhas_layout.addWidget(self.campo_b, 2, 1)
-        self.botao_b = QPushButton("📂 Selecionar")
+        self.botao_b = PyQt6.QtWidgets.QPushButton("📂 Selecionar")
         self.botao_b.clicked.connect(lambda: self.selecionar_planilha("B"))
         planilhas_layout.addWidget(self.botao_b, 2, 2)
 
         # Aba B
-        planilhas_layout.addWidget(QLabel("Aba B:"), 3, 0)
-        self.combo_b = QComboBox()
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Aba B:"), 3, 0)
+        self.combo_b = PyQt6.QtWidgets.QComboBox()
         self.combo_b.setEnabled(False)
         self.combo_b.addItem("Selecione uma planilha primeiro")
         planilhas_layout.addWidget(self.combo_b, 3, 1, 1, 2)
@@ -115,10 +97,10 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(planilhas_group)
 
         # ===== BOTÕES DE AÇÃO =====
-        botoes_layout = QHBoxLayout()
+        botoes_layout = PyQt6.QtWidgets.QHBoxLayout()
         botoes_layout.setSpacing(15)
 
-        self.btn_comparar = QPushButton("🔍 COMPARAR PLANILHAS")
+        self.btn_comparar = PyQt6.QtWidgets.QPushButton("🔍 COMPARAR PLANILHAS")
         self.btn_comparar.setEnabled(False)
         self.btn_comparar.setStyleSheet("""
             QPushButton {
@@ -140,7 +122,7 @@ class MainWindow(QMainWindow):
         self.btn_comparar.clicked.connect(self.comparar_clicked.emit)
         botoes_layout.addWidget(self.btn_comparar)
 
-        self.btn_config = QPushButton("⚙️ Configurações")
+        self.btn_config = PyQt6.QtWidgets.QPushButton("⚙️ Configurações")
         self.btn_config.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
@@ -156,7 +138,7 @@ class MainWindow(QMainWindow):
         self.btn_config.clicked.connect(self.configurar_clicked.emit)
         botoes_layout.addWidget(self.btn_config)
 
-        self.btn_ajuda = QPushButton("❓ Ajuda")
+        self.btn_ajuda = PyQt6.QtWidgets.QPushButton("❓ Ajuda")
         self.btn_ajuda.setStyleSheet("""
             QPushButton {
                 background-color: #95a5a6;
@@ -177,17 +159,17 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(botoes_layout)
 
         # ===== STATUS =====
-        status_frame = QFrame()
-        status_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Sunken)
+        status_frame = PyQt6.QtWidgets.QFrame()
+        status_frame.setFrameStyle(PyQt6.QtWidgets.QFrame.Shape.Box | PyQt6.QtWidgets.QFrame.Shadow.Sunken)
         status_frame.setStyleSheet("background-color: #ecf0f1; border-radius: 8px;")
 
-        status_layout = QVBoxLayout(status_frame)
+        status_layout = PyQt6.QtWidgets.QVBoxLayout(status_frame)
 
-        self.status_label = QLabel("✅ Aguardando seleção das planilhas...")
+        self.status_label = PyQt6.QtWidgets.QLabel("✅ Aguardando seleção das planilhas...")
         self.status_label.setStyleSheet("padding: 5px; font-weight: bold;")
         status_layout.addWidget(self.status_label)
 
-        self.detalhes_status = QTextEdit()
+        self.detalhes_status = PyQt6.QtWidgets.QTextEdit()
         self.detalhes_status.setReadOnly(True)
         self.detalhes_status.setMaximumHeight(80)
         self.detalhes_status.setStyleSheet("""
@@ -203,7 +185,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(status_frame)
 
         # ===== PROGRESSO =====
-        self.progress_bar = QProgressBar()
+        self.progress_bar = PyQt6.QtWidgets.QProgressBar()
         self.progress_bar.setVisible(False)
         self.progress_bar.setStyleSheet("""
             QProgressBar {
@@ -271,7 +253,7 @@ class MainWindow(QMainWindow):
 
     def selecionar_planilha(self, origem: str):
         """Abre diálogo para selecionar planilha."""
-        caminho, _ = QFileDialog.getOpenFileName(
+        caminho, _ = PyQt6.QtWidgets.QFileDialog.getOpenFileName(
             self,
             f"Selecionar Planilha {origem}",
             "",
@@ -317,7 +299,7 @@ class MainWindow(QMainWindow):
             self.verificar_pronto_para_comparar()
 
         except ImportError as e:
-            QMessageBox.critical(
+            PyQt6.QtWidgets.QMessageBox.critical(
                 self,
                 "Erro de Dependência",
                 f"Biblioteca necessária não encontrada:\n\n{e!s}\n\n"
@@ -325,7 +307,7 @@ class MainWindow(QMainWindow):
                 "pip install xlrd openpyxl"
             )
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Erro", f"Erro ao carregar planilha:\n\n{e!s}")
+            PyQt6.QtWidgets.QMessageBox.critical(self, "Erro", f"Erro ao carregar planilha:\n\n{e!s}")
 
     def verificar_pronto_para_comparar(self):
         """Verifica se ambas as planilhas estão prontas para comparação."""
@@ -398,16 +380,16 @@ class MainWindow(QMainWindow):
 
         # Valida se as planilhas estão carregadas
         if not self.campo_a.text() or not self.campo_b.text():
-            QMessageBox.warning(self, "Aviso", "Selecione ambas as planilhas primeiro!")
+            PyQt6.QtWidgets.QMessageBox.warning(self, "Aviso", "Selecione ambas as planilhas primeiro!")
             return
 
         # Valida se as abas estão selecionadas
         if self.combo_a.currentText() == "Selecione uma planilha primeiro":
-            QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha A!")
+            PyQt6.QtWidgets.QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha A!")
             return
 
         if self.combo_b.currentText() == "Selecione uma planilha primeiro":
-            QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha B!")
+            PyQt6.QtWidgets.QMessageBox.warning(self, "Aviso", "Selecione uma aba válida para a Planilha B!")
             return
 
         try:
@@ -452,7 +434,7 @@ class MainWindow(QMainWindow):
                 progresso = 40 + int(valor * 0.55)  # 40% a 95%
                 self.atualizar_progresso(progresso, 100)
                 self.adicionar_detalhe(f"   {mensagem}")
-                QApplication.processEvents()  # Atualiza a interface
+                PyQt6.QtWidgets.QApplication.processEvents()  # Atualiza a interface
             
             comparador.definir_callback_progresso(atualizar_progresso_callback)
             
@@ -470,7 +452,7 @@ class MainWindow(QMainWindow):
             gerador.carregar_resultado(resultado)
             
             # Define nome do relatório (com timestamp)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
             nome_relatorio = f"relatorio_comparacao_{timestamp}.xlsx"
             gerador.definir_nome_arquivo(nome_relatorio)
             
@@ -492,7 +474,7 @@ class MainWindow(QMainWindow):
             # Mostra resumo
             resumo = comparador.obter_resumo()
             
-            QMessageBox.information(
+            PyQt6.QtWidgets.QMessageBox.information(
                 self,
                 "✅ Comparação Concluída",
                 f"A comparação foi concluída com sucesso!\n\n"
@@ -520,7 +502,7 @@ class MainWindow(QMainWindow):
             self.atualizar_status("❌ Erro durante a comparação!")
             self.adicionar_detalhe(f"❌ ERRO: {e!s}")
             
-            QMessageBox.critical(
+            PyQt6.QtWidgets.QMessageBox.critical(
                 self,
                 "❌ Erro",
                 f"Ocorreu um erro durante a comparação:\n\n{e!s}"
@@ -529,7 +511,7 @@ class MainWindow(QMainWindow):
 
 def main():
     """Função principal para teste da GUI."""
-    app = QApplication(sys.argv)
+    app = PyQt6.QtWidgets.QApplication(sys.argv)
     app.setStyle("Fusion")
 
     window = MainWindow()

@@ -1,0 +1,55 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed --name comparador --icon src/gui/resources/icons/app.ico src/main.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: comparador-windows
+          path: dist/comparador.exe
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/comparador.exe
+          body: |
+            ## 📦 Comparador de Planilhas v${{ github.ref_name }}
+
+            ### 🚀 Novidades
+            - Descrição das novidades
+
+            ### 🔒 Segurança
+            - Melhorias de segurança
+
+            ### 🐛 Correções
+            - Correção de bugs
+
+            ### 📦 Download
+            - `comparador.exe` - Versão para Windows (portátil)
+          draft: false
+          prerelease: false

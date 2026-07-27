@@ -1,6 +1,7 @@
 """Janela principal do Comparador de Planilhas."""
 
 import sys
+import time
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -41,11 +42,12 @@ class MainWindow(QMainWindow):
         self.leitor_a = LeitorPlanilhas()
         self.leitor_b = LeitorPlanilhas()
 
-        self.comparar_clicked.connect(self.iniciar_comparacao)
-        self.configurar_clicked.connect(self.configurar_clicked)
-        self.ajuda_clicked.connect(self.ajuda_clicked)
-
         self.init_ui()
+        
+        # Conectar sinais
+        self.comparar_clicked.connect(self.on_comparar_clicked)
+        self.configurar_clicked.connect(self.on_configurar_clicked)
+        self.ajuda_clicked.connect(self.on_ajuda_clicked)
 
     def init_ui(self):
         """Inicializa a interface da janela principal."""
@@ -355,26 +357,29 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(valor)
         self.progress_bar.setFormat(f"{int(valor/maximo*100)}%")
 
-    def closeEvent(self, event):
-        """Evento ao fechar a janela."""
-        reply = QMessageBox.question(
-            self,
-            "Sair",
-            "Deseja realmente sair?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            event.accept()
-        else:
-            event.ignore()
+    # ===== SLOTS DOS BOTÕES =====
+    
+    def on_comparar_clicked(self):
+        """Slot para o botão Comparar."""
+        self.iniciar_comparacao()
 
-    def ajuda_clicked(self):  # noqa: F811
+    def on_configurar_clicked(self):
+        """Slot para o botão Configurações."""
+        self.abrir_configuracoes()
+
+    def on_ajuda_clicked(self):
+        """Slot para o botão Ajuda."""
+        self.abrir_ajuda()
+
+    # ===== FUNÇÕES DOS BOTÕES =====
+
+    def abrir_ajuda(self):
         """Abre a janela de ajuda."""
         from src.gui.help_window import HelpWindow
         help_window = HelpWindow(self)
         help_window.exec()
 
-    def configurar_clicked(self):  # noqa: F811
+    def abrir_configuracoes(self):
         """Abre a janela de configurações."""
         from src.gui.config_window import ConfigWindow
         config_window = ConfigWindow(self)
@@ -412,19 +417,27 @@ class MainWindow(QMainWindow):
         self.atualizar_progresso(0, 100)
         self.atualizar_status("⏳ Processando...")
 
-        # TODO: Implementar lógica de comparação
+        # TODO: Implementar lógica de comparação real
         # Por enquanto, simula o processamento
         self.adicionar_detalhe("📊 Carregando planilha A...")
-        self.adicionar_detalhe("📊 Carregando planilha B...")
-        self.adicionar_detalhe("🔍 Validando dados...")
-        self.adicionar_detalhe("📊 Comparando registros...")
-        self.adicionar_detalhe("📄 Gerando relatório...")
+        self.atualizar_progresso(20, 100)
+        time.sleep(0.3)
 
-        # Simula progresso
-        import time
-        for i in range(1, 101):
-            self.atualizar_progresso(i, 100)
-            time.sleep(0.02)
+        self.adicionar_detalhe("📊 Carregando planilha B...")
+        self.atualizar_progresso(40, 100)
+        time.sleep(0.3)
+
+        self.adicionar_detalhe("🔍 Validando dados...")
+        self.atualizar_progresso(60, 100)
+        time.sleep(0.3)
+
+        self.adicionar_detalhe("📊 Comparando registros...")
+        self.atualizar_progresso(80, 100)
+        time.sleep(0.3)
+
+        self.adicionar_detalhe("📄 Gerando relatório...")
+        self.atualizar_progresso(100, 100)
+        time.sleep(0.3)
 
         # Finaliza
         self.atualizar_status("✅ Comparação concluída!")
@@ -449,7 +462,20 @@ class MainWindow(QMainWindow):
             "   - Apenas na B: 0\n"
             "   - Iguais: 0\n"
             "   - Erros: 0"
-        )  
+        )
+
+    def closeEvent(self, event):
+        """Evento ao fechar a janela."""
+        reply = QMessageBox.question(
+            self,
+            "Sair",
+            "Deseja realmente sair?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()
+        else:
+            event.ignore()
 
 
 def main():

@@ -54,6 +54,7 @@ class ComparadorPlanilhas:
                     data_admissao=item.get("data_admissao", ""),
                     linha_original=item.get("linha_original"),
                     origem=item.get("origem", "A"),
+                    nome=item.get("nome", ""),
                     dados_extras=item.get("dados_extras", {}),
                 )
                 registros_a.append(reg)
@@ -62,6 +63,8 @@ class ComparadorPlanilhas:
                     "linha": item.get("linha_original", 0),
                     "cpf": item.get("cpf", ""),
                     "matricula": item.get("matricula", ""),
+                    "nome": item.get
+                    ("nome", ""),
                     "data": item.get("data_admissao", ""),
                     "erro": f"Erro ao converter: {e!s}",
                 })
@@ -72,6 +75,7 @@ class ComparadorPlanilhas:
                 reg = RegistroPlanilha(
                     cpf=item.get("cpf", ""),
                     matricula=item.get("matricula", ""),
+                    nome=item.get("nome", ""),
                     data_admissao=item.get("data_admissao", ""),
                     linha_original=item.get("linha_original"),
                     origem=item.get("origem", "B"),
@@ -83,20 +87,35 @@ class ComparadorPlanilhas:
                     "linha": item.get("linha_original", 0),
                     "cpf": item.get("cpf", ""),
                     "matricula": item.get("matricula", ""),
+                    "nome": item.get
+                    ("nome", ""),
                     "data": item.get("data_admissao", ""),
                     "erro": f"Erro ao converter: {e!s}",
                 })
 
-        # Indexa os dados por chave de comparação
-        self._atualizar_progresso(20, "📊 Indexando dados...")
-        self.dados_a = {r.chave_comparacao(): r for r in registros_a}
-        self.dados_b = {r.chave_comparacao(): r for r in registros_b}
+        # TRATAR DUPLICATAS NA PLANILHA A
+        _registros_a_unicos, _duplicatas_a = self._separar_duplicatas(registros_a, "A")
+        
+        # TRATAR DUPLICATAS NA PLANILHA B
+        _registros_b_unicos, _duplicatas_b = self._separar_duplicatas(registros_b, "B")
 
-        # Inicializa o resultado
+        # INICIALIZA O RESULTADO ANTES DE ADICIONAR AS DUPLICADAS
         self.resultado = ResultadoComparacao(
             total_registros_a=len(registros_a),
             total_registros_b=len(registros_b),
         )
+
+        # ADICIONAR DUPLICATAS COMO "APENAS NA A" OU "APENAS NA B"
+        for reg in _duplicatas_a:
+            self.resultado.apenas_a.append(reg)
+
+        for reg in _duplicatas_b:
+            self.resultado.apenas_b.append(reg)
+
+        # Indexa os dados por chave de comparação
+        self._atualizar_progresso(20, "📊 Indexando dados...")
+        self.dados_a = {r.chave_comparacao(): r for r in _registros_a_unicos}
+        self.dados_b = {r.chave_comparacao(): r for r in _registros_b_unicos}
 
         # Adiciona os erros
         for erro in erros_a:
@@ -106,6 +125,8 @@ class ComparadorPlanilhas:
                     planilha="A",
                     cpf=erro.get("cpf"),
                     matricula=erro.get("matricula"),
+                    nome=erro.get
+                    ("nome"),
                     data=erro.get("data"),
                     erro=erro.get("erro", "Erro desconhecido"),
                 )
@@ -118,12 +139,56 @@ class ComparadorPlanilhas:
                     planilha="B",
                     cpf=erro.get("cpf"),
                     matricula=erro.get("matricula"),
+                    nome=erro.get
+                    ("nome"),
                     data=erro.get("data"),
                     erro=erro.get("erro", "Erro desconhecido"),
                 )
             )
 
         self._atualizar_progresso(30, "✅ Dados carregados!")
+
+    def _separar_duplicatas(self, registros: list, origem: str) -> tuple[list, list]:
+        """
+        Separa registros únicos de duplicatas dentro da mesma planilha.
+        
+        Args:
+            registros: Lista de registros
+            origem: "A" ou "B"
+        
+        Returns:
+            Tuple com (registros_unicos, registros_duplicados)
+        """
+        vistos = {}
+        unicos = []
+        duplicados = []
+        
+        for reg in registros:
+            chave = reg.chave_comparacao()
+            if chave in vistos:
+                # Já vimos este registro antes → é duplicado
+                duplicados.append(reg)
+            else:
+                # Primeira vez que vemos → é único
+                vistos[chave] = True
+                unicos.append(reg)
+        
+        return unicos, duplicados
+
+    def _adicionar_duplicatas_ao_resultado(self, duplicatas_a: list, duplicatas_b: list) -> None:
+        """
+        Adiciona registros duplicados como "Apenas na A" ou "Apenas na B".
+        """
+        if not self.resultado:
+            return
+        
+        # Duplicatas da planilha A
+        for reg in duplicatas_a:
+            self.resultado.apenas_a.append(reg)
+        
+        # Duplicatas da planilha B
+        for reg in duplicatas_b:
+            self.resultado.apenas_b.append(reg)
 
     def comparar(self) -> ResultadoComparacao:
         """

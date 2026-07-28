@@ -62,6 +62,9 @@ class RegistroPlanilha(BaseModel):
             "matricula": self.matricula,
             "data_admissao": self.data_admissao_brasil(),
         }
+        if self.nome:
+            dados["nome"] = self.nome
+
         if self.dados_extras:
             dados.update(self.dados_extras)
         return dados

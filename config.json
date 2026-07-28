@@ -1,0 +1,25 @@
+{
+    "relatorio": {
+        "nome": "relatorio_comparacao.xlsx",
+        "pasta": "C:\\Users\\EDUCAÇÃO\\Desktop\\Compara-Planilhas\\relatorios",
+        "colunas": [
+            "CPF",
+            "Matrícula",
+            "Data de Admissão",
+            "Nome"
+        ],
+        "abas": [
+            "Divergências",
+            "Apenas na A",
+            "Apenas na B",
+            "Iguais",
+            "Erros",
+            "Resumo"
+        ],
+        "ordenacao": "cpf"
+    },
+    "processamento": {
+        "max_registros": 0,
+        "max_linhas_cabecalho": 10
+    }
+}

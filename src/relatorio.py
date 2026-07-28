@@ -161,6 +161,13 @@ class GeradorRelatorio:
                 for key, value in div.dados_extras_b.items():
                     if key in colunas:
                         linha[f'B_{key}'] = value
+
+    # 🔴 FORÇAR INCLUSÃO DO NOME (independente da configuração)
+            linha['Nome A'] = div.nome_a or ''
+            linha['Nome B'] = div.nome_b or ''
+            linha['Data A'] = div.data_a_brasil()
+            linha['Data B'] = div.data_b_brasil()
+            linha['Diferença (dias)'] = div.diferenca_dias
             
             dados.append(linha)
 
@@ -183,10 +190,6 @@ class GeradorRelatorio:
                     colunas_ordem.append(key)
         
         df = pd.DataFrame(dados)
-        
-        # Reordena colunas
-        df = df[colunas_ordem] if all(c in df.columns for c in colunas_ordem) else df
-        
         df.to_excel(writer, sheet_name='Divergências', index=False)
 
     def _criar_aba_apenas_a(self, writer: pd.ExcelWriter, colunas: list) -> None:

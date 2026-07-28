@@ -44,7 +44,7 @@ class ErrorsWindow(QDialog):
         # Tabela de erros
         self.tabela = QTableWidget()
         self.tabela.setColumnCount(6)
-        self.tabela.setHorizontalHeaderLabels(["Linha", "Planilha", "CPF", "Matrícula", "Data", "Erro"])
+        self.tabela.setHorizontalHeaderLabels(["Linha", "Planilha", "CPF", "Nome", "Matrícula", "Data", "Erro"])
         self.tabela.setSortingEnabled(True)
 
         self._popular_tabela()
@@ -119,14 +119,19 @@ class ErrorsWindow(QDialog):
             item = QTableWidgetItem(erro.get("matricula", ""))
             self.tabela.setItem(row, 3, item)
 
+            # Nome
+            item = QTableWidgetItem(erro.get
+            ("nome", ""))
+            self.tabela.setItem(row, 4, item)
+
             # Data
             item = QTableWidgetItem(erro.get("data", ""))
-            self.tabela.setItem(row, 4, item)
+            self.tabela.setItem(row, 5, item)
 
             # Erro (destacado)
             item = QTableWidgetItem(erro.get("erro", ""))
             item.setBackground(QColor(255, 220, 220))
-            self.tabela.setItem(row, 5, item)
+            self.tabela.setItem(row, 6, item)
 
         # Ajusta largura das colunas
         self.tabela.resizeColumnsToContents()
@@ -146,7 +151,7 @@ class ErrorsWindow(QDialog):
             # Escreve CSV
             with open(caminho, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                writer.writerow(["Linha", "Planilha", "CPF", "Matrícula", "Data", "Erro"])
+                writer.writerow(["Linha", "Planilha", "CPF", "Matrícula", "Nome", "Data", "Erro"])
 
                 for erro in self.erros:
                     writer.writerow([
@@ -154,6 +159,7 @@ class ErrorsWindow(QDialog):
                         erro.get("planilha", ""),
                         erro.get("cpf", ""),
                         erro.get("matricula", ""),
+                        erro.get("nome", ""),
                         erro.get("data", ""),
                         erro.get("erro", ""),
                     ])

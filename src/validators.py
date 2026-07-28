@@ -2,14 +2,13 @@
 
 import re
 from datetime import datetime
-from typing import Optional, Union
 
 
 class ValidadorCPF:
     """Validador de CPF com dígitos verificadores."""
 
     @staticmethod
-    def validar(cpf: Union[str, None]) -> bool:
+    def validar(cpf: str | None) -> bool:
         """
         Valida CPF com dígitos verificadores.
 
@@ -75,7 +74,7 @@ class ValidadorCPF:
 class ValidadorData:
     """Validador de datas com suporte a múltiplos formatos."""
 
-    FORMATOS = [
+    FORMATOS = [  # noqa: RUF012
         r"\d{2}/\d{2}/\d{4}",  # DD/MM/YYYY
         r"\d{2}-\d{2}-\d{4}",  # DD-MM-YYYY
         r"\d{2}\.\d{2}\.\d{4}",  # DD.MM.YYYY
@@ -93,7 +92,7 @@ class ValidadorData:
         return False
 
     @staticmethod
-    def parse_serial(serial: Union[int, float]) -> Optional[datetime]:
+    def parse_serial(serial: float) -> datetime | None:
         """
         Converte número serial do Excel para datetime.
 
@@ -110,7 +109,7 @@ class ValidadorData:
 
             # Excel serial: 1 = 1900-01-01
             # Ajuste: 1899-12-30 + serial dias
-            base = datetime(1899, 12, 30)
+            base = datetime(1899, 12, 30)  # noqa: DTZ001
             return base + timedelta(days=float(serial))
         except (ValueError, TypeError, OverflowError):
             return None
@@ -120,7 +119,7 @@ class ValidadorMatricula:
     """Validador de matrícula."""
 
     @staticmethod
-    def validar(valor: Union[str, None]) -> bool:
+    def validar(valor: str | None) -> bool:
         """
         Valida se a matrícula não está vazia após normalização.
 
@@ -132,12 +131,10 @@ class ValidadorMatricula:
         """
         if valor is None:
             return False
-        if not str(valor).strip():
-            return False
-        return True
+        return str(valor).strip()
 
     @staticmethod
-    def normalizar(valor: Union[str, int, float, None]) -> str:
+    def normalizar(valor: str | float | None) -> str:
         """
         Normaliza a matrícula removendo espaços.
 

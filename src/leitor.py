@@ -16,7 +16,8 @@ class LeitorPlanilhas:
     # Palavras-chave para identificar cabeçalhos (case insensitive)
     KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]  # noqa: RUF012
     KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "código", "codigo", "número", "numero", "MATRIC", "matric"]  # noqa: RUF012
-    KEYWORDS_NOME = ["nome", "nome do servidor", "servidor", "nome servidor", "nome completo"]  # noqa: RUF012
+    KEYWORDS_NOME = ["nome", "nome do servidor", "servidor", "nome servidor",  # noqa: RUF012
+    "nome completo", "NOME", "Nome", "nome do funcionário", "NOME DO SERVIDOR"]
     KEYWORDS_DATA = [  # noqa: RUF012
         "data de admissão",
         "data admissão",
@@ -179,8 +180,9 @@ class LeitorPlanilhas:
             tem_cpf = any(k in linha_texto for k in self.KEYWORDS_CPF)
             tem_matricula = any(k in linha_texto for k in self.KEYWORDS_MATRICULA)
             tem_data = any(k in linha_texto for k in self.KEYWORDS_DATA)
+            tem_nome = any(k in linha_texto for k in self.KEYWORDS_NOME)
 
-            if tem_cpf and tem_matricula and tem_data:
+            if tem_cpf and tem_matricula and tem_data and tem_nome:
                 self.linha_cabecalho = idx
                 break
 

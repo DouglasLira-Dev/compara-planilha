@@ -64,11 +64,11 @@ class ResultsWindow(QDialog):
 
         # Adiciona métricas
         metrics = [
-            ("📄 Total Registros A:", str(self.resultado.total_registros_a), "#3498db"),
-            ("📄 Total Registros B:", str(self.resultado.total_registros_b), "#3498db"),
+            ("📄 Total Registros A (PROF/PESSADM):", str(self.resultado.total_registros_a), "#3498db"),
+            ("📄 Total Registros B (SGP):", str(self.resultado.total_registros_b), "#3498db"),
             ("🔴 Divergências:", str(self.resultado.total_divergencias), "#e74c3c"),
-            ("🟡 Apenas na A:", str(self.resultado.total_apenas_a), "#f39c12"),
-            ("🟡 Apenas na B:", str(self.resultado.total_apenas_b), "#f39c12"),
+            ("🟡 Apenas na A (PROF/PESSADM):", str(self.resultado.total_apenas_a), "#f39c12"),
+            ("🟡 Apenas na B (SGP):", str(self.resultado.total_apenas_b), "#f39c12"),
             ("🟢 Iguais:", str(self.resultado.total_iguais), "#27ae60"),
             ("⚠️ Erros:", str(self.resultado.total_erros), "#e67e22"),
             ("📊 Total Processado:", str(total), "#2c3e50"),
@@ -94,8 +94,8 @@ class ResultsWindow(QDialog):
 
         # ===== ABAS COM DADOS =====
         tabs = QTabWidget()
-        tabs.addTab(self._criar_aba_apenas_a(), "📋 Apenas na A")
-        tabs.addTab(self._criar_aba_apenas_b(), "📋 Apenas na B")
+        tabs.addTab(self._criar_aba_apenas_a(), "📋 Apenas na A (PROF/PESSADM)")
+        tabs.addTab(self._criar_aba_apenas_b(), "📋 Apenas na B (SGP)")
         tabs.addTab(self._criar_aba_divergencias(), "🔴 Divergências")
         tabs.addTab(self._criar_aba_iguais(), "🟢 Iguais")
         tabs.addTab(self._criar_aba_erros(), "⚠️ Erros")
@@ -197,12 +197,12 @@ class ResultsWindow(QDialog):
         return tabela
 
     def _criar_aba_apenas_a(self) -> QWidget:
-        """Cria aba de registros apenas na A."""
+        """Cria aba de registros apenas na A (PROF/PESSADM)."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        colunas = ["cpf", "matricula", "data_admissao"]
-        headers = ["CPF", "Matrícula", "Data de Admissão"]
+        colunas = ["cpf", "matricula", "nome", "data_admissao"]
+        headers = ["CPF", "Matrícula", "Nome", "Data de Admissão"]
 
         dados = [r.to_dict(mascarar_cpf=True) for r in self.resultado.apenas_a]
         tabela = self._criar_tabela(dados, colunas)
@@ -212,12 +212,12 @@ class ResultsWindow(QDialog):
         return widget
 
     def _criar_aba_apenas_b(self) -> QWidget:
-        """Cria aba de registros apenas na B."""
+        """Cria aba de registros apenas na B (SGP)."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        colunas = ["cpf", "matricula", "data_admissao"]
-        headers = ["CPF", "Matrícula", "Data de Admissão"]
+        colunas = ["cpf", "matricula", "nome", "data_admissao"]
+        headers = ["CPF", "Matrícula", "Nome", "Data de Admissão"]
 
         dados = [r.to_dict(mascarar_cpf=True) for r in self.resultado.apenas_b]
         tabela = self._criar_tabela(dados, colunas)
@@ -231,8 +231,8 @@ class ResultsWindow(QDialog):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        colunas = ["cpf", "matricula", "data_a", "data_b", "diferenca_dias"]
-        headers = ["CPF", "Matrícula", "Data A", "Data B", "Diferença (dias)"]
+        colunas = ["cpf", "matricula", "nome_a", "nome_b", "data_a", "data_b", "diferenca_dias"]
+        headers = ["CPF", "Matrícula", "Nome A", "Nome B", "Data A", "Data B", "Diferença (dias)"]
 
         dados = [r.to_dict(mascarar_cpf=True) for r in self.resultado.divergencias]
         tabela = self._criar_tabela(dados, colunas)
@@ -259,8 +259,8 @@ class ResultsWindow(QDialog):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        colunas = ["cpf", "matricula", "data_admissao"]
-        headers = ["CPF", "Matrícula", "Data de Admissão"]
+        colunas = ["cpf", "matricula", "nome", "data_admissao"]
+        headers = ["CPF", "Matrícula", "Nome", "Data de Admissão"]
 
         dados = [r.to_dict(mascarar_cpf=True) for r in self.resultado.iguais]
         tabela = self._criar_tabela(dados, colunas)
@@ -274,8 +274,8 @@ class ResultsWindow(QDialog):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        colunas = ["linha", "planilha", "cpf", "matricula", "data", "erro"]
-        headers = ["Linha", "Planilha", "CPF", "Matrícula", "Data", "Erro"]
+        colunas = ["linha", "planilha", "cpf", "nome", "matricula", "data", "erro"]
+        headers = ["Linha", "Planilha", "CPF", "Nome", "Matrícula", "Data", "Erro"]
 
         dados = [r.to_dict(mascarar_cpf=True) for r in self.resultado.erros]
         tabela = self._criar_tabela(dados, colunas)

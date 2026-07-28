@@ -2,19 +2,18 @@
 
 import re
 from datetime import datetime
-from typing import Optional, Union
 
 import pandas as pd
 from dateutil import parser
 
-from src.validators import ValidadorCPF, ValidadorData, ValidadorMatricula
+from src.validators import ValidadorCPF, ValidadorData
 
 
 class NormalizadorDados:
     """Classe para normalização de dados de planilhas."""
 
     @staticmethod
-    def normalizar_cpf(valor: Union[str, int, None]) -> str:
+    def normalizar_cpf(valor: str | int | None) -> str:
         """
         Normaliza CPF com validação e completação de zeros à esquerda.
 
@@ -62,7 +61,7 @@ class NormalizadorDados:
         return cpf_limpo
 
     @staticmethod
-    def normalizar_matricula(valor: Union[str, int, float, None]) -> str:
+    def normalizar_matricula(valor: str | float | None) -> str:
         """
         Normaliza matrícula.
 
@@ -99,7 +98,7 @@ class NormalizadorDados:
         return valor_normalizado
 
     @staticmethod
-    def normalizar_data_admissao(valor: Union[str, int, float, datetime, None]) -> datetime:
+    def normalizar_data_admissao(valor: str | float | datetime | None) -> datetime:
         """
         Normaliza data de admissão com prioridade DD/MM/YYYY.
 
@@ -147,19 +146,19 @@ class NormalizadorDados:
 
                 # Prioridade 1: DD/MM/YYYY
                 if re.match(r"\d{2}/\d{2}/\d{4}", valor_limpo):
-                    return datetime.strptime(valor_limpo, "%d/%m/%Y")
+                    return datetime.strptime(valor_limpo, "%d/%m/%Y")  # noqa: DTZ007
 
                 # Prioridade 2: DD-MM-YYYY
                 if re.match(r"\d{2}-\d{2}-\d{4}", valor_limpo):
-                    return datetime.strptime(valor_limpo, "%d-%m-%Y")
+                    return datetime.strptime(valor_limpo, "%d-%m-%Y")  # noqa: DTZ007
 
                 # Prioridade 3: DD.MM.YYYY
                 if re.match(r"\d{2}\.\d{2}\.\d{4}", valor_limpo):
-                    return datetime.strptime(valor_limpo, "%d.%m.%Y")
+                    return datetime.strptime(valor_limpo, "%d.%m.%Y")  # noqa: DTZ007
 
                 # Prioridade 4: YYYY-MM-DD (ISO)
                 if re.match(r"\d{4}-\d{2}-\d{2}", valor_limpo):
-                    return datetime.strptime(valor_limpo, "%Y-%m-%d")
+                    return datetime.strptime(valor_limpo, "%Y-%m-%d")  # noqa: DTZ007
 
                 # Fallback: parser automático
                 try:
@@ -172,7 +171,7 @@ class NormalizadorDados:
             raise ValueError(f"Tipo de dado não suportado para data: {type(valor)}")
 
         except ValueError as e:
-            raise ValueError(f"Erro ao normalizar data: {str(e)}")
+            raise ValueError(f"Erro ao normalizar data: {e!s}")
 
     @staticmethod
     def formatar_data_brasil(data: datetime) -> str:

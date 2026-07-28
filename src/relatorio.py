@@ -189,7 +189,7 @@ class GeradorRelatorio:
         
         df.to_excel(writer, sheet_name='Divergências', index=False)
 
-    def _criar_aba_apenas_a(self, writer: pd.ExcelWriter) -> None:
+    def _criar_aba_apenas_a(self, writer: pd.ExcelWriter, colunas: list) -> None:
         """Cria a aba de registros apenas na Planilha A."""
         if not self.resultado.apenas_a:
             df = pd.DataFrame({'Mensagem': ['Nenhum registro apenas na Planilha A']})
@@ -209,7 +209,7 @@ class GeradorRelatorio:
         df = pd.DataFrame(dados)
         df.to_excel(writer, sheet_name='Apenas na A', index=False)
 
-    def _criar_aba_apenas_b(self, writer: pd.ExcelWriter) -> None:
+    def _criar_aba_apenas_b(self, writer: pd.ExcelWriter, colunas: list) -> None:
         """Cria a aba de registros apenas na Planilha B."""
         if not self.resultado.apenas_b:
             df = pd.DataFrame({'Mensagem': ['Nenhum registro apenas na Planilha B']})
@@ -229,7 +229,7 @@ class GeradorRelatorio:
         df = pd.DataFrame(dados)
         df.to_excel(writer, sheet_name='Apenas na B', index=False)
 
-    def _criar_aba_iguais(self, writer: pd.ExcelWriter) -> None:
+    def _criar_aba_iguais(self, writer: pd.ExcelWriter, colunas: list) -> None:
         """Cria a aba de registros idênticos."""
         if not self.resultado.iguais:
             df = pd.DataFrame({'Mensagem': ['Nenhum registro idêntico encontrado']})
@@ -248,7 +248,7 @@ class GeradorRelatorio:
         df = pd.DataFrame(dados)
         df.to_excel(writer, sheet_name='Iguais', index=False)
 
-    def _criar_aba_erros(self, writer: pd.ExcelWriter) -> None:
+    def _criar_aba_erros(self, writer: pd.ExcelWriter, colunas:list) -> None:
         """Cria a aba de erros."""
         if not self.resultado.erros:
             df = pd.DataFrame({'Mensagem': ['Nenhum erro encontrado']})

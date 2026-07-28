@@ -1,8 +1,8 @@
 """Gerenciador de configurações persistente."""
 
 import json
-import typing
 from pathlib import Path
+from typing import Any
 
 
 class ConfigManager:
@@ -41,10 +41,10 @@ class ConfigManager:
                 "max_linhas_cabecalho": 10
             }
         }
-        self._config = None
+        self._config: dict[str, Any] | None = None
         self.carregar()
 
-    def carregar(self) -> dict[str, typing.Any]:
+    def carregar(self) -> dict[str, Any]:
         """Carrega as configurações do arquivo."""
         if self._config is not None:
             return self._config
@@ -74,7 +74,7 @@ class ConfigManager:
         except Exception as e:  # noqa: BLE001
             print(f"⚠️ Erro ao salvar configurações: {e}")
 
-    def _mesclar_com_defaults(self, config: typing.dict) -> typing.dict:
+    def _mesclar_com_defaults(self, config: dict[str, Any]) -> dict[str, Any]:
         """Mescla a configuração com os defaults para garantir todas as chaves."""
         merged = self.defaults.copy()
         
@@ -90,7 +90,7 @@ class ConfigManager:
 
         return merged
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         """Obtém um valor da configuração."""
         config = self.carregar()
         keys = key.split('.')
@@ -104,7 +104,7 @@ class ConfigManager:
                 return default
         return value if value is not None else default
 
-    def set(self, key: str, value: typing.Any) -> None:
+    def set(self, key: str, value: Any) -> None:
         """Define um valor na configuração."""
         config = self.carregar()
         keys = key.split('.')
@@ -117,19 +117,19 @@ class ConfigManager:
         self._config = config
         self.salvar()
 
-    def get_colunas_selecionadas(self) -> list:
+    def get_colunas_selecionadas(self) -> list[str]:
         """Retorna a lista de colunas selecionadas."""
         return self.get('relatorio.colunas', self.defaults['relatorio']['colunas'])
 
-    def set_colunas_selecionadas(self, colunas: list) -> None:
+    def set_colunas_selecionadas(self, colunas: list[str]) -> None:
         """Define a lista de colunas selecionadas."""
         self.set('relatorio.colunas', colunas)
 
-    def get_abas_selecionadas(self) -> list:
+    def get_abas_selecionadas(self) -> list[str]:
         """Retorna a lista de abas selecionadas."""
         return self.get('relatorio.abas', self.defaults['relatorio']['abas'])
 
-    def set_abas_selecionadas(self, abas: list) -> None:
+    def set_abas_selecionadas(self, abas: list[str]) -> None:
         """Define a lista de abas selecionadas."""
         self.set('relatorio.abas', abas)
 

@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from src.config import Config
+from src.config_manager import ConfigManager
 from src.models import (
     ResultadoComparacao,
 )
@@ -39,17 +40,18 @@ class GeradorRelatorio:
         self.pasta_destino.mkdir(parents=True, exist_ok=True)
 
     def gerar(self) -> Path:
-        """
-        Gera o relatório Excel.
-
-        Returns:
-            Caminho do arquivo gerado
-
-        Raises:
-            ValueError: Se não houver resultado carregado
-        """
+        """Gera o relatório Excel."""
         if not self.resultado:
             raise ValueError("Nenhum resultado carregado. Execute carregar_resultado() primeiro.")
+
+        # Carrega configurações
+        config_manager = ConfigManager()
+        colunas_selecionadas = config_manager.get_colunas_selecionadas()
+        abas_selecionadas = config_manager.get_abas_selecionadas()
+        ordenacao = config_manager.get_ordenacao()
+
+        # Aplica ordenação
+        self._aplicar_ordenacao(ordenacao)
 
         # Cria o caminho completo
         self.arquivo_saida = self.pasta_destino / self.nome_arquivo
@@ -68,21 +70,26 @@ class GeradorRelatorio:
         # Cria o Excel com múltiplas abas
         with pd.ExcelWriter(self.arquivo_saida, engine='openpyxl') as writer:
             # Aba: Divergências
-            self._criar_aba_divergencias(writer)
+            if "Divergências" in abas_selecionadas:
+                self._criar_aba_divergencias(writer, colunas_selecionadas)
 
             # Aba: Apenas na A
-            self._criar_aba_apenas_a(writer)
+            if "Apenas na A" in abas_selecionadas:
+                self._criar_aba_apenas_a(writer, colunas_selecionadas)
 
             # Aba: Apenas na B
-            self._criar_aba_apenas_b(writer)
+            if "Apenas na B" in abas_selecionadas:
+                self._criar_aba_apenas_b(writer, colunas_selecionadas)
 
             # Aba: Iguais
-            self._criar_aba_iguais(writer)
+            if "Iguais" in abas_selecionadas:
+                self._criar_aba_iguais(writer, colunas_selecionadas)
 
             # Aba: Erros
-            self._criar_aba_erros(writer)
+            if "Erros" in abas_selecionadas:
+                self._criar_aba_erros(writer, colunas_selecionadas)
 
-            # Aba: Resumo
+            # Aba: Resumo (sempre incluída)
             self._criar_aba_resumo(writer)
 
         # Aplica formatação
@@ -90,8 +97,32 @@ class GeradorRelatorio:
 
         return self.arquivo_saida
 
-    def _criar_aba_divergencias(self, writer: pd.ExcelWriter) -> None:
-        """Cria a aba de divergências."""
+    def _aplicar_ordenacao(self, criterio: str) -> None:
+        """Aplica ordenação aos dados conforme critério."""
+        if criterio == "cpf":
+            key = lambda x: x.cpf
+        elif criterio == "matricula":
+            key = lambda x: x.matricula
+        elif criterio == "nome":
+            key = lambda x: x.nome or ""
+        elif criterio == "data":
+            key = lambda x: x.data_admissao
+        else:
+            return
+
+        self.resultado.apenas_a.sort(key=key)
+        self.resultado.apenas_b.sort(key=key)
+        self.resultado.iguais.sort(key=key)
+        self.resultado.divergencias.sort(key=lambda x: x.cpf if criterio == "cpf" else x.matricula)
+
+    def _criar_aba_divergencias(self, writer: pd.ExcelWriter, colunas: list) -> None:
+        """
+        Cria a aba de divergências.
+
+        Args:
+            writer: ExcelWriter para escrever os dados
+            colunas: Lista de colunas selecionadas para incluir
+        """
         if not self.resultado.divergencias:
             df = pd.DataFrame({'Mensagem': ['Nenhuma divergência encontrada']})
             df.to_excel(writer, sheet_name='Divergências', index=False)
@@ -99,17 +130,63 @@ class GeradorRelatorio:
 
         dados = []
         for div in self.resultado.divergencias:
-            dados.append({
-                'CPF': div.cpf_mascarado(),
-                'Matrícula': div.matricula,
-                'Nome A': div.nome_a or '',
-                'Nome B': div.nome_b or '',
-                'Data A': div.data_a_brasil(),
-                'Data B': div.data_b_brasil(),
-                'Diferença (dias)': div.diferenca_dias,
-            })
+            linha = {}
+            
+            # Colunas obrigatórias (sempre incluídas)
+            if True:  # CPF sempre incluído
+                linha['CPF'] = div.cpf_mascarado()
+            
+            if True:  # Matrícula sempre incluída
+                linha['Matrícula'] = div.matricula
+            
+            # Colunas opcionais (conforme configuração)
+            if 'Nome' in colunas:
+                linha['Nome A'] = div.nome_a or ''
+                linha['Nome B'] = div.nome_b or ''
+            
+            if 'Data de Admissão' in colunas:
+                linha['Data A'] = div.data_a_brasil()
+                linha['Data B'] = div.data_b_brasil()
+            
+            # Diferença sempre incluída
+            linha['Diferença (dias)'] = div.diferenca_dias
+            
+            # Colunas extras (dados extras das planilhas)
+            if div.dados_extras_a:
+                for key, value in div.dados_extras_a.items():
+                    if key in colunas:
+                        linha[f'A_{key}'] = value
+            
+            if div.dados_extras_b:
+                for key, value in div.dados_extras_b.items():
+                    if key in colunas:
+                        linha[f'B_{key}'] = value
+            
+            dados.append(linha)
 
+        # Cria DataFrame com as colunas na ordem desejada
+        colunas_ordem = []
+        if True:
+            colunas_ordem.append('CPF')
+        if True:
+            colunas_ordem.append('Matrícula')
+        if 'Nome' in colunas:
+            colunas_ordem.extend(['Nome A', 'Nome B'])
+        if 'Data de Admissão' in colunas:
+            colunas_ordem.extend(['Data A', 'Data B'])
+        colunas_ordem.append('Diferença (dias)')
+        
+        # Adiciona colunas extras que estão em colunas
+        if dados:
+            for key in dados[0]:
+                if key not in colunas_ordem:
+                    colunas_ordem.append(key)
+        
         df = pd.DataFrame(dados)
+        
+        # Reordena colunas
+        df = df[colunas_ordem] if all(c in df.columns for c in colunas_ordem) else df
+        
         df.to_excel(writer, sheet_name='Divergências', index=False)
 
     def _criar_aba_apenas_a(self, writer: pd.ExcelWriter) -> None:

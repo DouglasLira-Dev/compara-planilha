@@ -15,7 +15,7 @@ class LeitorPlanilhas:
 
     # Palavras-chave para identificar cabeçalhos (case insensitive)
     KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]  # noqa: RUF012
-    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "id", "código", "codigo", "número", "numero", "MATRIC", "matric"]  # noqa: RUF012
+    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "código", "codigo", "número", "numero", "MATRIC", "matric"]  # noqa: RUF012
     KEYWORDS_DATA = [  # noqa: RUF012
         "data de admissão",
         "data admissão",

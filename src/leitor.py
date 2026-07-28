@@ -16,6 +16,7 @@ class LeitorPlanilhas:
     # Palavras-chave para identificar cabeçalhos (case insensitive)
     KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]  # noqa: RUF012
     KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "código", "codigo", "número", "numero", "MATRIC", "matric"]  # noqa: RUF012
+    KEYWORDS_NOME = ["nome", "nome do servidor", "servidor", "nome servidor", "nome completo"]  # noqa: RUF012
     KEYWORDS_DATA = [  # noqa: RUF012
         "data de admissão",
         "data admissão",
@@ -50,6 +51,18 @@ class LeitorPlanilhas:
             True se carregou com sucesso, False caso contrário
         """
         try:
+            # Reseta o estado de uma eventual leitura anterior. Sem isso, se esta
+            # instância de LeitorPlanilhas for reaproveitada para carregar um novo
+            # arquivo (ou o mesmo arquivo modificado), o mapeamento de cabeçalhos
+            # (self.cabecalhos) e a linha de cabeçalho (self.linha_cabecalho) da
+            # planilha anterior continuariam valendo, fazendo processar_dados()
+            # ler a coluna errada como CPF.
+            self.cabecalhos = {}
+            self.dados = []
+            self.erros = []
+            self.linha_cabecalho = None
+            self.df_raw = None
+
             self.arquivo = Path(caminho)
             if not self.arquivo.exists():
                 raise FileNotFoundError(f"Arquivo não encontrado: {caminho}")
@@ -112,6 +125,16 @@ class LeitorPlanilhas:
         """
         if nome_aba not in self.abas:
             raise ValueError(f"Aba '{nome_aba}' não encontrada. Abas disponíveis: {self.abas}")
+
+        if nome_aba != self.aba_selecionada:
+            # A linha de cabeçalho e o mapeamento de colunas são específicos de
+            # cada aba, então precisam ser recalculados ao trocar de aba.
+            self.cabecalhos = {}
+            self.dados = []
+            self.erros = []
+            self.linha_cabecalho = None
+            self.df_raw = None
+
         self.aba_selecionada = nome_aba
         return True
 
@@ -179,6 +202,9 @@ class LeitorPlanilhas:
             # Verifica se é Data de Admissão
             elif any(k in col_str for k in self.KEYWORDS_DATA):
                 self.cabecalhos["data_admissao"] = idx
+            # verifica se é Nome
+            elif any(k in col_str for k in self.KEYWORDS_NOME):
+                self.cabecalhos["nome"] = idx
             # Colunas extras
             else:
                 if "extras" not in self.cabecalhos:
@@ -229,16 +255,19 @@ class LeitorPlanilhas:
                 cpf = row.iloc[self.cabecalhos["cpf"]] if self.cabecalhos["cpf"] < len(row) else ""
                 matricula = row.iloc[self.cabecalhos["matricula"]] if self.cabecalhos["matricula"] < len(row) else ""
                 data = row.iloc[self.cabecalhos["data_admissao"]] if self.cabecalhos["data_admissao"] < len(row) else ""
+                nome = row.iloc[self.cabecalhos["nome"]] if "nome" in self.cabecalhos and self.cabecalhos["nome"] < len(row) else ""
 
                 # Converte para string e trata NaN
                 cpf_str = str(cpf) if not pd.isna(cpf) else ""
                 matricula_str = str(matricula) if not pd.isna(matricula) else ""
                 data_str = str(data) if not pd.isna(data) else ""
+                nome_str = str(nome) if not pd.isna(nome) else ""
 
                 # Remove espaços
                 cpf_limpo = cpf_str.strip()
                 matricula_limpa = matricula_str.strip()
                 data_limpa = data_str.strip()
+                nome_limpo = nome_str.strip()
 
                 # VERIFICAÇÃO: Se todos os campos obrigatórios estiverem vazios ou forem "nan", pula
                 if (not cpf_limpo or cpf_limpo.lower() == "nan") and \
@@ -298,6 +327,7 @@ class LeitorPlanilhas:
                     "cpf": cpf_limpo_num,
                     "matricula": matricula_limpa if matricula_limpa.lower() != "nan" else "",
                     "data_admissao": data_limpa if data_limpa.lower() != "nan" else "",
+                    "nome": nome_limpo if nome_limpo.lower() != "nan" else "",
                     "linha_original": idx + 2,
                     "origem": origem,
                     "dados_extras": dados_extras,

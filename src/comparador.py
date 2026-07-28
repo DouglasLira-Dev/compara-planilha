@@ -163,17 +163,25 @@ class ComparadorPlanilhas:
             reg_a = self.dados_a[chave]
             reg_b = self.dados_b[chave]
 
-            # Compara as datas
-            if reg_a.data_admissao == reg_b.data_admissao:
+            # Compara as datas E os nomes
+            data_igual = reg_a.data_admissao == reg_b.data_admissao
+            nome_igual = reg_a.nome == reg_b.nome
+
+            if data_igual and nome_igual:
+                # Registros idênticos (data e nome iguais)
                 self.resultado.iguais.append(reg_a)
             else:
-                diferenca = abs((reg_a.data_admissao - reg_b.data_admissao).days)
+                # Divergência de data OU nome
+                diferenca_dias = abs((reg_a.data_admissao - reg_b.data_admissao).days) if not data_igual else 0
+                
                 divergente = RegistroDivergente(
                     cpf=reg_a.cpf,
                     matricula=reg_a.matricula,
+                    nome_a=reg_a.nome if reg_a.nome else "",
+                    nome_b=reg_b.nome if reg_b.nome else "",
                     data_a=reg_a.data_admissao,
                     data_b=reg_b.data_admissao,
-                    diferenca_dias=diferenca,
+                    diferenca_dias=diferenca_dias,
                     dados_extras_a=reg_a.dados_extras if reg_a.dados_extras else None,
                     dados_extras_b=reg_b.dados_extras if reg_b.dados_extras else None,
                 )

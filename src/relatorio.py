@@ -102,6 +102,8 @@ class GeradorRelatorio:
             dados.append({
                 'CPF': div.cpf_mascarado(),
                 'Matrícula': div.matricula,
+                'Nome A': div.nome_a or '',
+                'Nome B': div.nome_b or '',
                 'Data A': div.data_a_brasil(),
                 'Data B': div.data_b_brasil(),
                 'Diferença (dias)': div.diferenca_dias,
@@ -122,6 +124,7 @@ class GeradorRelatorio:
             dados.append({
                 'CPF': reg.cpf_mascarado(),
                 'Matrícula': reg.matricula,
+                'Nome': reg.nome or '',
                 'Data de Admissão': reg.data_admissao_brasil(),
                 'Status': 'Não encontrado na Planilha B',
             })
@@ -141,6 +144,7 @@ class GeradorRelatorio:
             dados.append({
                 'CPF': reg.cpf_mascarado(),
                 'Matrícula': reg.matricula,
+                'Nome': reg.nome or '',
                 'Data de Admissão': reg.data_admissao_brasil(),
                 'Status': 'Não encontrado na Planilha A',
             })
@@ -160,6 +164,7 @@ class GeradorRelatorio:
             dados.append({
                 'CPF': reg.cpf_mascarado(),
                 'Matrícula': reg.matricula,
+                'Nome': reg.nome or '',
                 'Data de Admissão': reg.data_admissao_brasil(),
             })
 
@@ -179,6 +184,7 @@ class GeradorRelatorio:
                 'Linha': erro.linha,
                 'Planilha': erro.planilha,
                 'CPF': erro.cpf_mascarado() if erro.cpf else '',
+                'Nome': erro.nome or "",
                 'Matrícula': erro.matricula or '',
                 'Data': erro.data_brasil() if erro.data else '',
                 'Erro': erro.erro,

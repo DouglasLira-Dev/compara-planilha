@@ -16,6 +16,7 @@ class RegistroPlanilha(BaseModel):
     cpf: str = Field(..., description="CPF com 11 dígitos")
     matricula: str = Field(..., description="Matrícula normalizada")
     data_admissao: datetime = Field(..., description="Data de admissão normalizada")
+    nome: str | None = Field(None, description="Nome do servidor")
     linha_original: int | None = Field(None, description="Número da linha na planilha")
     origem: str | None = Field(None, description="Origem do registro (A ou B)")
     dados_extras: dict[str, Any] | None = Field(
@@ -51,8 +52,8 @@ class RegistroPlanilha(BaseModel):
         return ValidadorCPF.mascarar(self.cpf)
 
     def chave_comparacao(self) -> str:
-        """Gera chave única para comparação (CPF + Matrícula)."""
-        return f"{self.cpf}|{self.matricula}"
+        """Gera chave única para comparação (CPF + Matrícula + Nome)."""
+        return f"{self.cpf}|{self.matricula}|{self.nome or ''}"
 
     def to_dict(self, mascarar_cpf: bool = False) -> dict[str, Any]:
         """Converte para dicionário."""
@@ -67,12 +68,14 @@ class RegistroPlanilha(BaseModel):
 
 
 class RegistroDivergente(BaseModel):
-    """Modelo para registro com divergência de data."""
+    """Modelo para registro com divergência de data ou nome."""
 
     model_config = ConfigDict(extra="forbid")
 
     cpf: str
     matricula: str
+    nome_a: str
+    nome_b: str
     data_a: datetime
     data_b: datetime
     diferenca_dias: int
@@ -93,6 +96,8 @@ class RegistroDivergente(BaseModel):
         dados = {
             "cpf": self.cpf_mascarado() if mascarar_cpf else self.cpf,
             "matricula": self.matricula,
+            "nome_a": self.nome_a or "",
+            "nome_b": self.nome_b or "",
             "data_a": self.data_a_brasil(),
             "data_b": self.data_b_brasil(),
             "diferenca_dias": self.diferenca_dias,

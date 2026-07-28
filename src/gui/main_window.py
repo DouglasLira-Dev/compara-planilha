@@ -63,23 +63,23 @@ class MainWindow(PyQt6.QtWidgets.QMainWindow):
         planilhas_group.setLayout(planilhas_layout)
 
         # Planilha A
-        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha A:"), 0, 0)
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha A (Prof/Pessadm):"), 0, 0)
         self.campo_a = PyQt6.QtWidgets.QLineEdit()
-        self.campo_a.setPlaceholderText("Selecione a primeira planilha...")
+        self.campo_a.setPlaceholderText("Selecione a primeira planilha Prof/Pessadm...")
         planilhas_layout.addWidget(self.campo_a, 0, 1)
         self.botao_a = PyQt6.QtWidgets.QPushButton("📂 Selecionar")
         self.botao_a.clicked.connect(lambda: self.selecionar_planilha("A"))
         planilhas_layout.addWidget(self.botao_a, 0, 2)
 
         # Aba A
-        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Aba A:"), 1, 0)
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Prof/Pessadm:"), 1, 0)
         self.combo_a = PyQt6.QtWidgets.QComboBox()
         self.combo_a.setEnabled(False)
         self.combo_a.addItem("Selecione uma planilha primeiro")
         planilhas_layout.addWidget(self.combo_a, 1, 1, 1, 2)
 
         # Planilha B
-        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha B:"), 2, 0)
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Planilha B (SGP):"), 2, 0)
         self.campo_b = PyQt6.QtWidgets.QLineEdit()
         self.campo_b.setPlaceholderText("Selecione a segunda planilha...")
         planilhas_layout.addWidget(self.campo_b, 2, 1)
@@ -88,7 +88,7 @@ class MainWindow(PyQt6.QtWidgets.QMainWindow):
         planilhas_layout.addWidget(self.botao_b, 2, 2)
 
         # Aba B
-        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("Aba B:"), 3, 0)
+        planilhas_layout.addWidget(PyQt6.QtWidgets.QLabel("SGP:"), 3, 0)
         self.combo_b = PyQt6.QtWidgets.QComboBox()
         self.combo_b.setEnabled(False)
         self.combo_b.addItem("Selecione uma planilha primeiro")

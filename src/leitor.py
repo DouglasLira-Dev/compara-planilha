@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -13,15 +13,17 @@ from src.validators import ValidadorCPF
 class LeitorPlanilhas:
     """Classe para leitura e validação de planilhas Excel."""
 
-    # Palavras-chave para identificar cabeçalhos
+    # Palavras-chave para identificar cabeçalhos (case insensitive)
     KEYWORDS_CPF = ["cpf", "cpf/cnpj", "documento", "doc"]  # noqa: RUF012
-    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "id", "código", "codigo", "número", "numero"]  # noqa: RUF012
+    KEYWORDS_MATRICULA = ["matrícula", "matricula", "registro", "id", "código", "codigo", "número", "numero", "MATRIC", "matric"]  # noqa: RUF012
     KEYWORDS_DATA = [  # noqa: RUF012
         "data de admissão",
         "data admissão",
         "data adm",
         "admissão",
         "admissao",
+        "ADMISSÃO",
+        "ADMISSAO",
         "data de entrada",
         "data entrada",
     ]
@@ -54,7 +56,7 @@ class LeitorPlanilhas:
 
             # Verifica extensão para usar o engine correto
             extensao = self.arquivo.suffix.lower()
-            
+
             # Lista todas as abas
             try:
                 if extensao in ['.xlsx', '.xlsm']:
@@ -63,19 +65,16 @@ class LeitorPlanilhas:
                     try:
                         xls = pd.ExcelFile(self.arquivo, engine='xlrd')
                     except ImportError:
-                        # Fallback para openpyxl se xlrd não estiver disponível
                         xls = pd.ExcelFile(self.arquivo, engine='openpyxl')
                 else:
-                    # Tenta com openpyxl por padrão
                     xls = pd.ExcelFile(self.arquivo, engine='openpyxl')
-                    
+
             except Exception:  # noqa: BLE001
-                # Tenta com outro engine
                 try:
                     xls = pd.ExcelFile(self.arquivo)
-                except Exception as e2:  # noqa: BLE001
-                    raise ValueError(f"Erro ao ler arquivo: {e2!s}")
-                
+                except Exception as e:  # noqa: BLE001
+                    raise ValueError(f"Erro ao ler arquivo: {e!s}")
+
             self.abas = xls.sheet_names
 
             if not self.abas:
@@ -87,7 +86,6 @@ class LeitorPlanilhas:
                     raise ValueError(f"Aba '{aba}' não encontrada. Abas disponíveis: {self.abas}")
                 self.aba_selecionada = aba
             else:
-                # Se só tem 1 aba, seleciona automaticamente
                 if len(self.abas) == 1:
                     self.aba_selecionada = self.abas[0]
                 else:
@@ -139,12 +137,25 @@ class LeitorPlanilhas:
         limite = Config.MAX_LINHAS_BUSCA_CABECALHO
         self.linha_cabecalho = None
 
+        # Converte todas as células para string minúscula para comparação
         for idx in range(min(limite, len(self.df_raw))):
-            linha = self.df_raw.iloc[idx].astype(str).str.lower().str.strip()
+            # Pega a linha e converte para string, tratando NaN
+            linha = self.df_raw.iloc[idx]
+            # Converte cada célula para string, substituindo NaN por string vazia
+            linha_str = []
+            for cell in linha:
+                if pd.isna(cell):
+                    linha_str.append("")
+                else:
+                    linha_str.append(str(cell).lower().strip())
+            
+            # Concatena todas as células da linha para procurar as palavras-chave
+            linha_texto = " ".join(linha_str)
+
             # Verifica se contém as palavras-chave
-            tem_cpf = any(any(k in str(cell) for k in self.KEYWORDS_CPF) for cell in linha)
-            tem_matricula = any(any(k in str(cell) for k in self.KEYWORDS_MATRICULA) for cell in linha)
-            tem_data = any(any(k in str(cell) for k in self.KEYWORDS_DATA) for cell in linha)
+            tem_cpf = any(k in linha_texto for k in self.KEYWORDS_CPF)
+            tem_matricula = any(k in linha_texto for k in self.KEYWORDS_MATRICULA)
+            tem_data = any(k in linha_texto for k in self.KEYWORDS_DATA)
 
             if tem_cpf and tem_matricula and tem_data:
                 self.linha_cabecalho = idx
@@ -229,13 +240,13 @@ class LeitorPlanilhas:
                 matricula_limpa = matricula_str.strip()
                 data_limpa = data_str.strip()
 
-                # VERIFICAÇÃO CRÍTICA: Se todos os campos obrigatórios estiverem vazios ou forem "nan", pula a linha
+                # VERIFICAÇÃO: Se todos os campos obrigatórios estiverem vazios ou forem "nan", pula
                 if (not cpf_limpo or cpf_limpo.lower() == "nan") and \
-                (not matricula_limpa or matricula_limpa.lower() == "nan") and \
-                (not data_limpa or data_limpa.lower() == "nan"):
+                   (not matricula_limpa or matricula_limpa.lower() == "nan") and \
+                   (not data_limpa or data_limpa.lower() == "nan"):
                     continue  # Pula linhas em branco
 
-                # Se CPF está vazio ou é "nan"
+                # Se CPF está vazio
                 if not cpf_limpo or cpf_limpo.lower() == "nan":
                     self.erros.append({
                         "linha": idx + 2,
@@ -263,9 +274,24 @@ class LeitorPlanilhas:
                 cpf_valido = ValidadorCPF.validar(cpf_limpo_num) if cpf_limpo_num else False
 
                 if not cpf_limpo_num:
-                    raise ValueError("CPF vazio")
-                elif not cpf_valido:
-                    raise ValueError("CPF inválido (dígitos verificadores não conferem)")
+                    self.erros.append({
+                        "linha": idx + 2,
+                        "cpf": cpf_limpo,
+                        "matricula": matricula_limpa if matricula_limpa.lower() != "nan" else "",
+                        "data": data_limpa if data_limpa.lower() != "nan" else "",
+                        "erro": "CPF vazio após sanitização",
+                    })
+                    continue
+
+                if not cpf_valido:
+                    self.erros.append({
+                        "linha": idx + 2,
+                        "cpf": cpf_limpo,
+                        "matricula": matricula_limpa if matricula_limpa.lower() != "nan" else "",
+                        "data": data_limpa if data_limpa.lower() != "nan" else "",
+                        "erro": f"CPF inválido (dígitos verificadores não conferem): {cpf_limpo}",
+                    })
+                    continue
 
                 # Registro válido
                 registro = {

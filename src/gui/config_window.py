@@ -20,12 +20,12 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config import Config
+from src.config_manager import ConfigManager
 
 
 class ConfigWindow(QDialog):
     """Janela de configurações."""
 
-    # Sinal emitido quando configurações são salvas
     config_saved = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -34,7 +34,7 @@ class ConfigWindow(QDialog):
         self.setMinimumSize(600, 500)
         self.setModal(True)
 
-        # Carrega configurações atuais
+        self.config_manager = ConfigManager()
         self.config = Config
 
         self.init_ui()
@@ -160,7 +160,6 @@ class ConfigWindow(QDialog):
         group_layout = QVBoxLayout()
         group_colunas.setLayout(group_layout)
 
-        # Lista de colunas com checkboxes
         self.colunas_checkboxes = {}
         colunas = ["CPF", "Matrícula", "Data de Admissão", "Nome", "Departamento", "Cargo", "Telefone", "Email"]
 
@@ -169,7 +168,6 @@ class ConfigWindow(QDialog):
         row, col = 0, 0
         for coluna in colunas:
             checkbox = QCheckBox(coluna)
-            checkbox.setChecked(True)  # Por padrão todas selecionadas
             self.colunas_checkboxes[coluna] = checkbox
             grid_layout.addWidget(checkbox, row, col)
             col += 1
@@ -202,7 +200,6 @@ class ConfigWindow(QDialog):
 
         for aba in abas:
             checkbox = QCheckBox(aba)
-            checkbox.setChecked(True)
             self.abas_checkboxes[aba] = checkbox
             group_layout.addWidget(checkbox)
 
@@ -224,6 +221,7 @@ class ConfigWindow(QDialog):
         opcoes = [
             ("cpf", "CPF (Recomendado)"),
             ("matricula", "Matrícula"),
+            ("nome", "Nome"),
             ("data", "Data de Admissão"),
         ]
 
@@ -232,12 +230,6 @@ class ConfigWindow(QDialog):
             radio.setObjectName(valor)
             self.ordenacao_group.addButton(radio)
             group_layout.addWidget(radio)
-
-        # Seleciona CPF como padrão
-        for btn in self.ordenacao_group.buttons():
-            if btn.objectName() == "cpf":
-                btn.setChecked(True)
-                break
 
         layout.addWidget(group_ordenacao)
         layout.addStretch()
@@ -250,14 +242,40 @@ class ConfigWindow(QDialog):
             self.pasta_destino.setText(pasta)
 
     def carregar_configuracoes(self):
-        """Carrega as configurações atuais."""
-        self.nome_relatorio.setText(self.config.RELATORIO_NOME_PADRAO)
-        self.pasta_destino.setText(str(self.config.REPORTS_DIR))
-        self.max_registros.setText(str(self.config.MAX_REGISTROS))
-        self.max_linhas_cabecalho.setText(str(self.config.MAX_LINHAS_BUSCA_CABECALHO))
+        """Carrega as configurações atuais do config_manager."""
+        config = self.config_manager.carregar()
+        
+        # Geral
+        self.nome_relatorio.setText(config.get('relatorio', {}).get('nome', Config.RELATORIO_NOME_PADRAO))
+        
+        pasta = config.get('relatorio', {}).get('pasta', '')
+        if pasta:
+            self.pasta_destino.setText(pasta)
+        else:
+            self.pasta_destino.setText(str(Config.REPORTS_DIR))
+        
+        self.max_registros.setText(str(config.get('processamento', {}).get('max_registros', 0)))
+        self.max_linhas_cabecalho.setText(str(config.get('processamento', {}).get('max_linhas_cabecalho', 10)))
+
+        # Colunas
+        colunas_selecionadas = config.get('relatorio', {}).get('colunas', [])
+        for nome, checkbox in self.colunas_checkboxes.items():
+            checkbox.setChecked(nome in colunas_selecionadas)
+
+        # Abas
+        abas_selecionadas = config.get('relatorio', {}).get('abas', [])
+        for nome, checkbox in self.abas_checkboxes.items():
+            checkbox.setChecked(nome in abas_selecionadas)
+
+        # Ordenação
+        ordenacao = config.get('relatorio', {}).get('ordenacao', 'cpf')
+        for btn in self.ordenacao_group.buttons():
+            if btn.objectName() == ordenacao:
+                btn.setChecked(True)
+                break
 
     def salvar_configuracoes(self):
-        """Salva as configurações."""
+        """Salva as configurações no config_manager."""
         try:
             # Valida os valores
             nome = self.nome_relatorio.text().strip()
@@ -269,7 +287,7 @@ class ConfigWindow(QDialog):
 
             pasta = self.pasta_destino.text().strip()
             if not pasta:
-                raise ValueError("Pasta de destino não pode estar vazia")
+                pasta = str(Config.REPORTS_DIR)
 
             max_registros = int(self.max_registros.text() or "0")
             if max_registros < 0:
@@ -279,8 +297,39 @@ class ConfigWindow(QDialog):
             if max_linhas < 1:
                 raise ValueError("Linhas para busca deve ser >= 1")
 
-            # Aqui você pode salvar em um arquivo de configuração
-            # Por enquanto, apenas mostramos uma mensagem
+            # Salva no config_manager
+            self.config_manager.set('relatorio.nome', nome)
+            self.config_manager.set('relatorio.pasta', pasta)
+            self.config_manager.set('processamento.max_registros', max_registros)
+            self.config_manager.set('processamento.max_linhas_cabecalho', max_linhas)
+
+            # Colunas selecionadas
+            colunas_selecionadas = [
+                nome for nome, checkbox in self.colunas_checkboxes.items()
+                if checkbox.isChecked()
+            ]
+            # Garante que colunas obrigatórias estão incluídas
+            obrigatorias = ["CPF", "Matrícula", "Data de Admissão"]
+            for col in obrigatorias:
+                if col not in colunas_selecionadas:
+                    colunas_selecionadas.append(col)
+            self.config_manager.set_colunas_selecionadas(colunas_selecionadas)
+
+            # Abas selecionadas
+            abas_selecionadas = [
+                nome for nome, checkbox in self.abas_checkboxes.items()
+                if checkbox.isChecked()
+            ]
+            # Garante que Resumo está sempre incluído
+            if "Resumo" not in abas_selecionadas:
+                abas_selecionadas.append("Resumo")
+            self.config_manager.set_abas_selecionadas(abas_selecionadas)
+
+            # Ordenação
+            for btn in self.ordenacao_group.buttons():
+                if btn.isChecked():
+                    self.config_manager.set_ordenacao(btn.objectName())
+                    break
 
             QMessageBox.information(
                 self,
@@ -297,6 +346,8 @@ class ConfigWindow(QDialog):
 
         except ValueError as e:
             QMessageBox.warning(self, "Erro de Validação", f"❌ {e!s}")
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.critical(self, "Erro", f"❌ Erro ao salvar: {e!s}")
 
     def restaurar_padroes(self):
         """Restaura as configurações padrão."""
@@ -308,22 +359,6 @@ class ConfigWindow(QDialog):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.nome_relatorio.setText("relatorio_comparacao.xlsx")
-            self.pasta_destino.setText(str(Config.REPORTS_DIR))
-            self.max_registros.setText("0")
-            self.max_linhas_cabecalho.setText("10")
-
-            # Restaura checkboxes
-            for checkbox in self.colunas_checkboxes.values():
-                checkbox.setChecked(True)
-
-            for checkbox in self.abas_checkboxes.values():
-                checkbox.setChecked(True)
-
-            # Restaura ordenação
-            for btn in self.ordenacao_group.buttons():
-                if btn.objectName() == "cpf":
-                    btn.setChecked(True)
-                    break
-
+            self.config_manager.reset_defaults()
+            self.carregar_configuracoes()
             QMessageBox.information(self, "Padrões Restaurados", "✅ Configurações restauradas para os valores padrão!")
